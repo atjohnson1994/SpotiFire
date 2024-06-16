@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+        }
+        .profile-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2rem 0;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+        }
+        .profile-header img {
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            margin-right: 2rem;
+        }
+        .profile-header .user-info {
+            flex: 1;
+        }
+        .profile-header .user-info h2 {
+            margin: 0;
+        }
+        .profile-header .user-info p {
+            color: #666;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: white;
+            margin-top: 1rem;
+            padding: 1rem;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        nav a {
+            color: #333;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            text-align: center;
+        }
+        nav a:hover {
+            background-color: #f4f4f4;
+            border-radius: 8px;
+        }
+        .content {
+            width: 80%;
+            max-width: 800px;
+            background-color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+        .hidden {
+    display: none;
+}
+
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="user-info">
+                <h2 id="username">John Doe</h2>
+                <p>@johndoe</p>
+                <p>SpotiFire</p>
+            </div>
+        </div>
+        
+        <nav>
+            <a id="openDeleteModalBtn">Remove Listener</a>
+            <a id="newListenerButton">New Listener</a>
+            <a id="createPlaylistButton">Create Playlist</a>
+            <a id="openSettingsModalBtn">Settings</a>
+        </nav>
+    
+        <div class="content" id="posts">
+            <h2>Active Listeners</h2>
+        </div>
+        <div class="content" id="followers">
+            <h2>Playlist</h2>
+            <p id="playlist_url"></p>
+        </div>
+
+        <div class="content" id="settings">
+            <h2>Settings</h2>
+            <p>Songs per listener:</p>
+            <p id="user_spl"></p>
+            <br>
+            <p>Allows explicit tracks:</p>
+            <p id="user_explicit"></p>
+            <br>
+            <p>Allows holiday tracks:</p>
+            <p id="user_holiday"></p>
+            <br>
+            <p>Number of related artists:</p>
+            <p id="user_nra"></p>
+            <br>
+            <p>Related artist songs count:</p>
+            <p id="user_rasc"></p>
+            <br>
+        </div>
+    </div>
+    <div id="newListenerModal" class="modal hidden">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <form id="addItemForm"> <!-- Added id="addItemForm" to the form for easier reference -->
+                <label for="name">Listener Name:</label>
+                <input type="text" id="name" name="name" required>
+                <br>
+                <label for="a1">Artist 1:</label>
+                <input type="text" id="a1" name="a1" required>
+                <br>
+                <label for="a2">Artist 2:</label>
+                <input type="text" id="a2" name="a2">
+                <br>
+                <label for="a3">Artist 3:</label>
+                <input type="text" id="a3" name="a3">
+                <br>
+                <label for="a4">Artist 4:</label>
+                <input type="text" id="a4" name="a4">
+                <br>
+                <label for="a5">Artist 5:</label>
+                <input type="text" id="a5" name="a5">
+                <br>
+                <label for="a6">Artist 6:</label>
+                <input type="text" id="a6" name="a6">
+                <br>
+                <label for="a7">Artist 7:</label>
+                <input type="text" id="a7" name="a7">
+                <br>
+                <label for="a8">Artist 8:</label>
+                <input type="text" id="a8" name="a8">
+                <br>
+                <label for="a9">Artist 9:</label>
+                <input type="text" id="a9" name="a9">
+                <br>
+                <label for="a10">Artist 10:</label>
+                <input type="text" id="a10" name="a10">
+                <br>
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+    </div>
+<!-- Delete Item Modal -->
+<div id="deleteItemModal" class="modal hidden">
+    <div class="modal-content">
+        <span id="closeDeleteModal" class="close">&times;</span>
+        <form id="deleteItemForm">
+            <label for="deleteItemName">Listener Name:</label>
+            <input type="text" id="deleteItemName" name="deleteItemName" required>
+            <br>
+            <input type="submit" value="Delete">
+        </form>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal hidden">
+    <div class="modal-content">
+        <span id="closeSettingsModal" class="close">&times;</span>
+        <form id="settingsForm">
+            <label for="spl">Songs per listener:</label>
+            <input type="number" id="spl" name="spl" required>
+            <br>
+            <label for="explicit">Explicit tracks allowed:</label>
+            <input type="checkbox" id="explicit" name="explicit">
+            <br>
+            <label for="holiday">Holiday tracks allowed:</label>
+            <input type="checkbox" id="holiday" name="holiday">
+            <br>
+            <label for="nra">Number of related artists:</label>
+            <input type="number" id="nra" name="nra" required>
+            <br>
+            <label for="rasc">Related artist song count:</label>
+            <input type="number" id="rasc" name="rasc" required>
+            <br>
+            <input type="submit" value="Submit">
+        </form>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+    <a href="#" id="logoutBtn">Logout</a>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded and parsed');
+
+        async function fetchData() {
+            console.log('Starting fetchData');
+            const jwtToken = localStorage.getItem('jwtToken');
+            console.log('JWT Token from local storage:', jwtToken);
+            if (!jwtToken) {
+
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/home', {
+                    headers: {
+                        'Authorization': 'Bearer ' + jwtToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log('Authorization header:', 'Bearer ' + jwtToken);
+
+                if (!response.ok) {
+                    console.error('Failed to fetch data, status:', response.status);
+                    throw new Error('Failed to fetch data');
+                }
+
+                const data = await response.json();
+                document.getElementById('username').textContent = data.content.username;
+                document.getElementById('user_spl').textContent = data.content.songs_per_listener;
+                document.getElementById('user_explicit').textContent = data.content.explicit;
+                document.getElementById('user_holiday').textContent = data.content.holiday;
+                document.getElementById('user_nra').textContent = data.content.number_of_related_artists;
+                document.getElementById('user_rasc').textContent = data.content.related_artist_songs_count;
+                document.getElementById('playlist_url').textContent = data.content.playlist_url + '?si=collaborate';
+                // Active listeners container
+                let postsContainer = document.getElementById('posts');
+
+                for (let i = 0; i < data.listeners.length; i++) {
+                    let newElement = document.createElement('div');
+                    newElement.id = 'l' + i;
+
+                    let textContent = data.listeners[i].name + ': ';
+                    let added = false; // Flag to check if any properties were added
+
+                    // Loop through a1 to a10
+                    for (let j = 1; j <= 10; j++) {
+                        let propName = 'a' + j;
+                        if (data.listeners[i][propName] !== null && data.listeners[i][propName] !== undefined) {
+                            if (added) {
+                                textContent += ', ';
+                            }
+                            textContent += data.listeners[i][propName];
+                            added = true;
+                        }
+                    }
+
+                    newElement.textContent = textContent;
+                    postsContainer.appendChild(newElement);
+                }
+
+
+                console.log('Fetched data:', data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to fetch data. Please check your connection or try again later.');
+            }
+        }
+
+        async function logout() {
+            console.log('Logging out');
+            localStorage.removeItem('jwtToken');
+            window.location.href = '/login';
+        }
+
+        fetchData();
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+    });
+
+    document.getElementById("newListenerButton").addEventListener("click", function() {
+    var modal = document.getElementById("newListenerModal");
+    modal.style.display = "block";
+    });
+
+    document.getElementById("closeModal").addEventListener("click", function() {
+    var modal = document.getElementById("newListenerModal");
+    modal.style.display = "none";
+    });
+
+    window.addEventListener("click", function(event) {
+    var modal = document.getElementById("newListenerModal");
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+    });
+
+// Function to handle form submission
+const handleFormSubmit = async (event) => {
+    event.preventDefault(); // Prevent default form submission
+
+    // Replace with your actual JWT token retrieval logic from localStorage
+    const token = localStorage.getItem('jwtToken');
+
+    // Construct the new item data from form inputs
+    const newItemData = {
+        name: document.getElementById('name').value,
+        a1: document.getElementById('a1').value,
+        a2: document.getElementById('a2').value || null, // Convert empty string to null
+        a3: document.getElementById('a3').value || null,
+        a4: document.getElementById('a4').value || null,
+        a5: document.getElementById('a5').value || null,
+        a6: document.getElementById('a6').value || null,
+        a7: document.getElementById('a7').value || null,
+        a8: document.getElementById('a8').value || null,
+        a9: document.getElementById('a9').value || null,
+        a10: document.getElementById('a10').value || null
+    };
+
+    try {
+        const response = await fetch('/items', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(newItemData) // Convert object to JSON string
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to add item: ' + response.status);
+        }
+
+        // If successful, parse the JSON response
+        const responseData = await response.json();
+        console.log('Item added successfully:', responseData);
+
+        // Optionally, close the modal or display success message to the user
+        closeModal(); // Implement closeModal function as needed
+
+        // Reset the form fields
+        document.getElementById('addItemForm').reset();
+
+        // Handle success as needed (e.g., update UI, show success message)
+        alert('Item added successfully!');
+
+    } catch (error) {
+        // Handle errors (e.g., network error, server error)
+        console.error('Error adding item:', error.message);
+        alert('Failed to add item. Please try again.');
+    }
+};
+
+
+// Function to handle settings form submission
+const handleSettingsFormSubmit = async (event) => {
+    event.preventDefault(); // Prevent default form submission
+
+    // Replace with your actual JWT token retrieval logic from localStorage
+    const token = localStorage.getItem('jwtToken');
+
+    // Construct the settings data from form inputs
+    const settingsData = {
+        spl: document.getElementById('spl').value,
+        explicit: document.getElementById('explicit').checked,
+        holiday: document.getElementById('holiday').checked,
+        nra: document.getElementById('nra').value,
+        rasc: document.getElementById('rasc').value,
+    };
+    console.log(document.getElementById('spl').value)
+    console.log(settingsData)
+    try {
+        const response = await fetch('/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(settingsData) // Convert object to JSON string
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update settings: ' + response.status);
+        }
+
+        // If successful, parse the JSON response
+        const responseData = await response.json();
+        console.log('Settings updated successfully:', responseData);
+
+        // Optionally, close the modal or display success message to the user
+        closeSettingsModal(); // Implement closeModal function as needed
+
+        // Reset the form fields
+        document.getElementById('settingsForm').reset();
+
+        // Handle success as needed (e.g., update UI, show success message)
+        alert('Settings updated successfully!');
+
+    } catch (error) {
+        // Handle errors (e.g., network error, server error)
+        console.error('Error updating settings:', error.message);
+        alert('Failed to update settings. Please try again.');
+    }
+};
+
+// Event listener for form submission
+document.getElementById('addItemForm').addEventListener('submit', handleFormSubmit);
+
+// Event listener for form submission
+document.getElementById('settingsForm').addEventListener('submit', handleSettingsFormSubmit);
+
+// Function to close the modal (assuming it's a hidden class toggle)
+const closeModal = () => {
+    document.getElementById('newListenerModal').classList.add('hidden');
+};
+
+// Function to handle button click
+const handleCreatePlaylistButtonClick = async (event) => {
+    event.preventDefault(); // Prevent default form submission
+
+    try {
+        // Call createPlaylist function with event object
+        await createPlaylist(event);
+    } catch (error) {
+        console.error('Error while creating playlist:', error.message);
+        alert('Failed to create playlist. Please try again.');
+    }
+};
+
+// Add event listener to the button
+document.getElementById('createPlaylistButton').addEventListener('click', handleCreatePlaylistButtonClick);
+
+// Create playlist
+const createPlaylist = async (event) => {
+    event.preventDefault(); // Prevent default form submission
+
+    // Replace with your actual JWT token retrieval logic from localStorage
+    const token = localStorage.getItem('jwtToken');
+
+    try {
+        const response = await fetch('/create', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to create playlist');
+        }
+
+        const data = await response.json();
+        console.log('Playlist created successfully:', data);
+        document.getElementById('playlist_url').textContent = data.playlist_url;
+
+        // Handle further processing of the response if needed
+
+    } catch (error) {
+        // Handle errors (e.g., network error, server error)
+        console.error('Error:', error.message);
+        throw error; // Rethrow error to propagate it to the caller
+    }
+};
+
+// Function to open the delete item modal
+const openDeleteModal = () => {
+    const modal = document.getElementById('deleteItemModal');
+    modal.style.display = 'block';
+};
+
+// Function to open the settings modal
+const openSettingsModal = () => {
+    const modal = document.getElementById('settingsModal');
+    modal.style.display = 'block';
+};
+
+// Function to close the delete item modal
+const closeDeleteModal = () => {
+    const modal = document.getElementById('deleteItemModal');
+    modal.style.display = 'none';
+    document.getElementById('deleteItemForm').reset(); // Reset form on close
+};
+
+// Function to close the settings modal
+const closeSettingsModal = () => {
+    const modal = document.getElementById('settingsModal');
+    modal.style.display = 'none';
+    document.getElementById('settingsForm').reset(); // Reset form on close
+};
+
+// Event listener for button to open delete item modal
+document.getElementById('openDeleteModalBtn').addEventListener('click', openDeleteModal);
+
+// Event listener for closing the delete item modal (clicking on the close button)
+document.getElementById('closeDeleteModal').addEventListener('click', closeDeleteModal);
+
+// Event listener for button to open settings modal
+document.getElementById('openSettingsModalBtn').addEventListener('click', openSettingsModal);
+
+// Event listener for closing the settings modal (clicking on the close button)
+document.getElementById('closeSettingsModal').addEventListener('click', closeSettingsModal);
+
+// Event listener for clicking outside the modal to close it
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('deleteItemModal');
+    if (event.target === modal) {
+        closeDeleteModal();
+    }
+});
+
+// Event listener for clicking outside the modal to close it
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('settingsModal');
+    if (event.target === modal) {
+        closeSettingsModal();
+    }
+});
+
+// Event listener for form submission to delete item
+document.getElementById('deleteItemForm').addEventListener('submit', async (event) => {
+    event.preventDefault(); // Prevent default form submission
+
+    // Replace with your actual JWT token retrieval logic from localStorage
+    const token = localStorage.getItem('jwtToken');
+
+    // Retrieve item name to delete from form input
+    const itemNameToDelete = document.getElementById('deleteItemName').value;
+
+    try {
+        // Send DELETE request to backend endpoint with item name in URL or request body
+        const response = await fetch(`/items/${encodeURIComponent(itemNameToDelete)}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete item: ' + response.status);
+        }
+
+        // Optionally, close the modal or display success message to the user
+        closeDeleteModal(); // Implement closeModal function as needed
+
+        // Handle success as needed (e.g., update UI, show success message)
+        alert('Item deleted successfully!');
+
+    } catch (error) {
+        // Handle errors (e.g., network error, server error)
+        console.error('Error deleting item:', error.message);
+        alert('Failed to delete item. Please try again.');
+    }
+});
+
+
+
+</script>
+</html>
