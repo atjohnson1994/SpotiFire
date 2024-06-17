@@ -351,30 +351,21 @@ def playlist_creation(items, user):
             # Collect URI's
             artist_uri = search_results['artists']['items'][0]['uri']
             related_artist_search_results = sp.artist_related_artists(artist_uri) # Search related artists
-            related_artist_uri1 = related_artist_search_results['artists'][0]['uri']
-            related_artist_uri2 = related_artist_search_results['artists'][1]['uri']
-            related_artist_uri3 = related_artist_search_results['artists'][2]['uri']
 
+            related_artist_uris = []
+            samples = []
+            for q in range(nra):
+                related_artist_uris.append(related_artist_search_results['artists'][q]['uri'])
+            for w, uri in enumerate(related_artist_uris):
+                top_tracks = sp.artist_top_tracks(uri, country='US')
+                top_tracks_sample = random.sample(top_tracks['tracks'],rasc)
+                samples.append(top_tracks_sample)
+              
             # Collect top tracks for each artist
             artist_top_songs = sp.artist_top_tracks(artist_uri,country='US')
-            related_artist_top_songs1 = sp.artist_top_tracks(related_artist_uri1, country='US')
-            print(f'Related artist 1: {related_artist_search_results["artists"][0]["name"]}')
-            time.sleep(6)
-            related_artist_top_songs2 = sp.artist_top_tracks(related_artist_uri2, country='US')
-            print(f'Related artist 2: {related_artist_search_results["artists"][1]["name"]}')
-            time.sleep(6)
-            related_artist_top_songs3 = sp.artist_top_tracks(related_artist_uri3, country='US')
-            print(f'Related artist 3: {related_artist_search_results["artists"][2]["name"]}')
-            time.sleep(6)
+            samples.extend(artist_top_songs)
 
-            # Randomly select one song from each related artist
-            related_artist_top_songs_sample1 = random.sample(related_artist_top_songs1['tracks'],rasc)
-            related_artist_top_songs_sample2 = random.sample(related_artist_top_songs2['tracks'],rasc)
-            related_artist_top_songs_sample3 = random.sample(related_artist_top_songs3['tracks'],rasc)
-
-            # Filter out explicit and holiday tracks
-            sample_lists = [related_artist_top_songs_sample1, related_artist_top_songs_sample2, related_artist_top_songs_sample3] # List of sampled tracks
-            for sample in sample_lists:
+            for sample in samples:
                 for j in range(len(sample)):
                   if allow_holiday == False:
                       if sample[j]['name'] in holiday_key_words: # Check for holiday track
@@ -390,17 +381,6 @@ def playlist_creation(items, user):
                       print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
                       songs.append(sample[j]['uri'])
                     
-                    
-
-            for j in range(len(artist_top_songs['tracks'])):
-                if artist_top_songs['tracks'][j]['name'] in holiday_key_words: # Check for holiday track
-                    print(f"Track '{artist_top_songs['tracks'][j]['name']}' by {artist_top_songs['tracks'][j]['artists'][0]['name']} removed for Holiday status.")
-                    continue
-                if artist_top_songs['tracks'][j]['explicit'] == False: # Check for explicit
-                    print(f"Track '{artist_top_songs['tracks'][j]['name']}' by {artist_top_songs['tracks'][j]['artists'][0]['name']} added to sample pool.")
-                    songs.append(artist_top_songs['tracks'][j]['uri'])
-                else:
-                    print(f"Track '{artist_top_songs['tracks'][j]['name']}' by {artist_top_songs['tracks'][j]['artists'][0]['name']} removed for explicit rating.")
 
         # If song count is below 30
         if len(songs) < spl:
