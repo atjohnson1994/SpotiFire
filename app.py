@@ -317,13 +317,19 @@ def add_songs_to_playlist(all_songs, user_uri):
         time.sleep(6)
         split_index += 99
 
-def playlist_creation(items, user_uri):
+def playlist_creation(items, user):
     all_songs = []
     for i in range(len(items)):
         # Key words used to filter out holiday music
         holiday_key_words = ['Christmas','christmas','Santa','santa']
         item = items[i]
         name = item.name
+        user_uri = user.playlist_uri
+        allow_explicit = user.explicit
+        allow_holiday = user.holiday
+        spl = user.songs_per_listener
+        nra = user.number_of_related_artists
+        rasc = user.related_artist_songs_count
         songs = []
         artists = [
             item.a1, item.a2, item.a3, item.a4, item.a5, 
@@ -362,22 +368,29 @@ def playlist_creation(items, user_uri):
             time.sleep(6)
 
             # Randomly select one song from each related artist
-            related_artist_top_songs_sample1 = random.sample(related_artist_top_songs1['tracks'],1)
-            related_artist_top_songs_sample2 = random.sample(related_artist_top_songs2['tracks'],1)
-            related_artist_top_songs_sample3 = random.sample(related_artist_top_songs3['tracks'],1)
+            related_artist_top_songs_sample1 = random.sample(related_artist_top_songs1['tracks'],rasc)
+            related_artist_top_songs_sample2 = random.sample(related_artist_top_songs2['tracks'],rasc)
+            related_artist_top_songs_sample3 = random.sample(related_artist_top_songs3['tracks'],rasc)
 
             # Filter out explicit and holiday tracks
             sample_lists = [related_artist_top_songs_sample1, related_artist_top_songs_sample2, related_artist_top_songs_sample3] # List of sampled tracks
             for sample in sample_lists:
                 for j in range(len(sample)):
-                    if sample[j]['name'] in holiday_key_words: # Check for holiday track
-                        print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for Holiday status.")
-                        continue
-                    if sample[j]['explicit'] == False: # Check for explicit
-                        print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
-                        songs.append(sample[j]['uri'])
-                    else:
-                        print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for explicit rating.")
+                  if allow_holiday == False:
+                      if sample[j]['name'] in holiday_key_words: # Check for holiday track
+                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for Holiday status.")
+                          continue
+                  if allow_explicit == False:
+                      if sample[j]['explicit'] == False: # Check for explicit
+                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
+                          songs.append(sample[j]['uri'])
+                      else:
+                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for explicit rating.")
+                  else:
+                      print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
+                      songs.append(sample[j]['uri'])
+                    
+                    
 
             for j in range(len(artist_top_songs['tracks'])):
                 if artist_top_songs['tracks'][j]['name'] in holiday_key_words: # Check for holiday track
@@ -390,7 +403,7 @@ def playlist_creation(items, user_uri):
                     print(f"Track '{artist_top_songs['tracks'][j]['name']}' by {artist_top_songs['tracks'][j]['artists'][0]['name']} removed for explicit rating.")
 
         # If song count is below 30
-        if len(songs) < 30:
+        if len(songs) < spl:
             songs_sample = random.sample(songs, len(songs))
             if len(songs) > 2:
                 filler_tracks = random.sample(related_artist_top_songs1['tracks'],3) # Grab 3 filler tracks from related artist 1
@@ -403,7 +416,7 @@ def playlist_creation(items, user_uri):
                         
         # If song count is 30 or greater, take a random sample of 30 songs and add to playlist         
         else: 
-            songs_sample = random.sample(songs,30)
+            songs_sample = random.sample(songs,spl)
         all_songs.extend(songs_sample)
     # Add playlists to spotify
     add_songs_to_playlist(all_songs, user_uri)
@@ -437,7 +450,7 @@ def create_playlist():
     items = Item.query.filter_by(user_id=user_id, selected=True).all()
     if items:
         try:
-            playlist_creation(items, user_uri)
+            playlist_creation(items, user)
             return jsonify(playlist_url)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
