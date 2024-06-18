@@ -324,11 +324,10 @@ def add_songs_to_playlist(all_songs, user_uri):
 
 def playlist_creation(items, user):
     all_songs = []
+    holiday_key_words = ['christmas', 'santa']
+
     for i in range(len(items)):
-        # Key words used to filter out holiday music
-        holiday_key_words = ['Christmas','christmas','Santa','santa']
         item = items[i]
-        name = item.name
         user_uri = user.playlist_uri
         allow_explicit = user.explicit
         allow_holiday = user.holiday
@@ -340,74 +339,57 @@ def playlist_creation(items, user):
             item.a1, item.a2, item.a3, item.a4, item.a5, 
             item.a6, item.a7, item.a8, item.a9, item.a10
         ]
-        # Clean the artist list
         artists_clean = pd.Series(artists).dropna().reset_index(drop=True)
 
-        # Loop through artist list
         for t in range(len(artists_clean)):
-            artist_name = artists_clean[t] 
+            artist_name = artists_clean[t]
             search_results = sp.search(q='artist:' + artist_name, type='artist', limit=1)
-            if search_results['artists']['total'] == 0: # If no artists found
-                print(f"No results for {artist_name}") # Print message
-                continue # Skip
+            if search_results['artists']['total'] == 0:
+                print(f"No results for {artist_name}")
+                continue
             print(f"Searching {artist_name}'s related artists")
             time.sleep(sleep_rate)
 
-            # Collect main artist URI
             artist_uri = search_results['artists']['items'][0]['uri']
-            related_artist_search_results = sp.artist_related_artists(artist_uri) # Search related artists
+            related_artist_search_results = sp.artist_related_artists(artist_uri)
 
-            related_artist_uris = []
+            related_artists = related_artist_search_results['artists'][:nra]
             samples = []
-            for q in range(nra):
-                related_artist_uris.append(related_artist_search_results['artists'][q]['uri'])
-            for w, uri in enumerate(related_artist_uris):
+            for related_artist in related_artists:
+                uri = related_artist['uri']
                 top_tracks = sp.artist_top_tracks(uri, country='US')
-                top_tracks_sample = random.sample(top_tracks['tracks'],rasc)
-                samples.extend(top_tracks_sample)
-              
-            # Collect top tracks for main artist
-            artist_top_songs = sp.artist_top_tracks(artist_uri,country='US')
+                samples.extend(random.sample(top_tracks['tracks'], min(rasc, len(top_tracks['tracks']))))
+
+            artist_top_songs = sp.artist_top_tracks(artist_uri, country='US')['tracks']
             samples.extend(artist_top_songs)
 
-            for sample in samples:
-                for j in range(len(sample)):
-                  if allow_holiday == False:
-                      if sample[j]['name'] in holiday_key_words: # Check for holiday track
-                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for Holiday status.")
-                          continue
-                  if allow_explicit == False:
-                      if sample[j]['explicit'] == False: # Check for explicit
-                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
-                          songs.append(sample[j]['uri'])
-                      else:
-                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for explicit rating.")
-                  else:
-                      print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
-                      songs.append(sample[j]['uri'])
-                    
+            for track in samples:
+                if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words):
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.")
+                    continue
+                if not allow_explicit and track['explicit']:
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.")
+                    continue
+                print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.")
+                songs.append(track['uri'])
 
-        # If song count is below spl
         if len(songs) < spl:
-            songs_sample = random.sample(songs, len(songs))
             if len(songs) > 2:
-                filler_artist = related_artist_search_results['artists'][0]['uri']
-                filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')
-                filler_tracks = random.sample(filler_top_tracks['tracks'],3) # Grab 3 filler tracks from related artist 1
-                for j in range(len(filler_tracks)):
-                    if filler_tracks[j]['explicit'] == False: # Check if songs are explicit
-                        songs_sample.append(filler_tracks[j]['uri'])
-                        print(f"Track '{filler_tracks[j]['name']}' by {filler_tracks[j]['artists'][0]['name']} added to sample pool.")
+                filler_artist = related_artists[0]['uri']
+                filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')['tracks']
+                filler_tracks = random.sample(filler_top_tracks, min(3, len(filler_top_tracks)))
+                for track in filler_tracks:
+                    if not track['explicit']:
+                        songs.append(track['uri'])
+                        print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.")
                     else:
-                        print(f"Track '{filler_tracks[j]['name']}' by {filler_tracks[j]['artists'][0]['name']} removed for explicit rating.")
-                        
-        # If song count is 30 or greater, take a random sample of 30 songs and add to playlist         
-        else: 
-            songs_sample = random.sample(songs,spl)
-        all_songs.extend(songs_sample)
-    # Add playlists to spotify
-    add_songs_to_playlist(all_songs, user_uri)
+                        print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.")
+        else:
+            songs = random.sample(songs, spl)
 
+        all_songs.extend(songs)
+
+    add_songs_to_playlist(all_songs, user_uri)
 # Create playlist
 @app.route('/create', methods=['GET'])
 @jwt_required()
