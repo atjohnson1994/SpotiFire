@@ -142,7 +142,7 @@
         <nav>
             <a id="openDeleteModalBtn">Remove Listener</a>
             <a id="newListenerButton">New Listener</a>
-            <a id="createPlaylistButton">Create Playlist</a>
+            <a id="openPlaylistButton">Create Playlist</a>
             <a id="openSettingsModalBtn">Settings</a>
         </nav>
     
@@ -252,7 +252,14 @@
     </div>
 </div>
 
-
+<!-- Playlist Modal -->
+<div id="playlistModal" class="modal hidden">
+    <div class="modal-content" id=playlistListeners>
+        <span id="closePlaylistModal" class="close">&times;</span>
+            <p>Listener</p>
+            <button id="createPlaylistButton">Create Playlist</button>
+    </div>
+</div>
 
 
 
@@ -326,7 +333,15 @@
                     postsContainer.appendChild(newElement);
                 }
 
-
+                // Create playlist modal
+                let playlistListeners = document.getElementById('playlistListeners');
+                for (let i = 0; i < data.listeners.length; i++) {
+                    let newElement = document.createElement('div');
+                    newElement.id = 'listener' + i;
+                    let textContent = data.listeners[i].name;
+                    newElement.textContent = textContent;
+                    playlistListeners.appendChild(newElement)
+                
                 console.log('Fetched data:', data);
 
             } catch (error) {
@@ -361,7 +376,7 @@
         modal.style.display = "none";
     }
     });
-
+    
 // Function to handle form submission
 const handleFormSubmit = async (event) => {
     event.preventDefault(); // Prevent default form submission
@@ -556,6 +571,18 @@ const closeSettingsModal = () => {
     document.getElementById('settingsForm').reset(); // Reset form on close
 };
 
+// Function to open the playlist modal
+const openPlaylistModal = () => {
+    const modal = document.getElementById('playlistModal');
+    modal.style.display = 'block';
+};
+
+// Function to close the playlist modal
+const closePlaylistModal = () => {
+    const modal = document.getElementById('playlistModal');
+    modal.style.display = 'none';
+};
+
 // Event listener for button to open delete item modal
 document.getElementById('openDeleteModalBtn').addEventListener('click', openDeleteModal);
 
@@ -567,6 +594,12 @@ document.getElementById('openSettingsModalBtn').addEventListener('click', openSe
 
 // Event listener for closing the settings modal (clicking on the close button)
 document.getElementById('closeSettingsModal').addEventListener('click', closeSettingsModal);
+
+// Event listener for button to open playlist modal
+document.getElementById('openPlaylistModalBtn').addEventListener('click', openPlaylistModal);
+
+// Event listener for closing the playlist modal (clicking on the close button)
+document.getElementById('closePlaylistModal').addEventListener('click', closePlaylistModal);
 
 // Event listener for clicking outside the modal to close it
 window.addEventListener('click', (event) => {
@@ -581,6 +614,14 @@ window.addEventListener('click', (event) => {
     const modal = document.getElementById('settingsModal');
     if (event.target === modal) {
         closeSettingsModal();
+    }
+});
+
+// Event listener for clicking outside the modal to close it
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('playlistModal');
+    if (event.target === modal) {
+        closePlaylistModal();
     }
 });
 
