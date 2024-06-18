@@ -20,7 +20,7 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=c_id,
                                                redirect_uri="http://localhost:1410/",
                                                scope=("user-library-read", "playlist-modify-private")))
 me = my_id
-
+sleep_rate=5
 # Playlist IDs
 playlist1_uid = p1_uid
 playlist2_uid = p2_uid
@@ -29,6 +29,7 @@ playlist4_uid = p4_uid
 playlist_combo_uid = pc_uid
 playlist_combo2_uid = pc2_uid
 
+# Initialize app
 app = Flask(__name__)
 # CORS(app)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -38,6 +39,7 @@ app.config['JWT_SECRET_KEY'] = jwt_key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///items.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Set up database
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
@@ -54,7 +56,6 @@ class User(db.Model):
     holiday = db.Column(db.Boolean, nullable=False)
     number_of_related_artists = db.Column(db.Integer, nullable=False)
     related_artist_songs_count = db.Column(db.Integer, nullable=False)
-
 
 # Item model
 class Item(db.Model):
@@ -91,15 +92,17 @@ def login_submit():
     password = data.get('password', None)
     if not username or not password:
         return jsonify({'msg': 'Missing username or password'}), 400
-    # Handle login form submission logic here
+    
+    # User query
     user = User.query.filter_by(username=username).first()
 
+    # Check password and provide jwt token
     if not user or not check_password_hash(user.password, password):
         return jsonify({'msg': 'Bad username or password'}), 401
     access_token = create_access_token(identity=user.id)
     return jsonify(access_token=access_token), 200
 
-
+# Register route
 @app.route('/register', methods=['GET'])
 def register_form():
     return render_template('register.html')
@@ -153,29 +156,29 @@ def home_get():
         return jsonify({"message": "Error processing request", "error": str(e)}), 500
 
 
-# Public route example
+# Landing page route
 @app.route('/')
 def landing():
     return render_template('landing.html')
 
-# Route to get all items (requires authentication)
-@app.route('/items', methods=['GET'])
-@jwt_required()
-def get_items():
-    items = Item.query.all()
-    return jsonify([{'id': item.id, 'name': item.name} for item in items])
+# # Route to get all items 
+# @app.route('/items', methods=['GET'])
+# @jwt_required()
+# def get_items():
+#     items = Item.query.all()
+#     return jsonify([{'id': item.id, 'name': item.name} for item in items])
 
-# Route to get a specific item by ID (requires authentication)
-@app.route('/items/<int:item_id>', methods=['GET'])
-@jwt_required()
-def get_item(item_id):
-    item = Item.query.get(item_id)
-    if item:
-        return jsonify({'id': item.id, 'name': item.name})
-    else:
-        return jsonify({'error': 'Item not found'}), 404
+# # Route to get a specific item by ID
+# @app.route('/items/<int:item_id>', methods=['GET'])
+# @jwt_required()
+# def get_item(item_id):
+#     item = Item.query.get(item_id)
+#     if item:
+#         return jsonify({'id': item.id, 'name': item.name})
+#     else:
+#         return jsonify({'error': 'Item not found'}), 404
 
-# Route to get all items for the user
+# Get all listeners for the active user
 @app.route('/listeners', methods=['GET'])
 @jwt_required()
 def get_user_items():
@@ -186,6 +189,7 @@ def get_user_items():
     else:
         return jsonify({'error': 'No items found for this user'}), 404
 
+# Selected route
 @app.route('/update_listener/<int:listener_id>', methods=['POST'])
 def update_listener(listener_id):
     selected = request.json.get('selected')
@@ -195,7 +199,7 @@ def update_listener(listener_id):
             break
     return jsonify({'success': True})
 
-# Route to add a new item (requires authentication)
+# Route to add a new listener
 @app.route('/items', methods=['POST'])
 @jwt_required()
 def add_item():
@@ -229,6 +233,7 @@ def add_item():
     # Return a JSON response with the newly added item's details and HTTP status code 201 (Created)
     return jsonify({'id': new_item.id, 'name': new_item.name}), 201
 
+# Route to get username
 @app.route('/user', methods=['GET'])
 @jwt_required()
 def get_user():
@@ -242,7 +247,7 @@ def get_user():
 
 
 
-# Route to update an item (requires authentication)
+# Route to update listener name (unused)
 @app.route('/items/<int:item_id>', methods=['PUT'])
 @jwt_required()
 def update_item(item_id):
@@ -255,7 +260,7 @@ def update_item(item_id):
     db.session.commit()
     return jsonify({'id': item.id, 'name': item.name})
 
-# Route to update user settings (requires authentication)
+# Route to update user settings
 @app.route('/settings', methods=['POST'])
 @jwt_required()
 def update_settings():
@@ -279,7 +284,7 @@ def update_settings():
     
     return jsonify({'message': 'User settings updated successfully'}), 200
 
-
+# Route to remove listener
 @app.route('/items/<string:item_name>', methods=['DELETE'])
 @jwt_required()
 def delete_item(item_name):
@@ -314,16 +319,22 @@ def add_songs_to_playlist(all_songs, user_uri):
             sp.playlist_replace_items(playlist_id=user_uri, items=split)
         else:
             sp.playlist_add_items(playlist_id=user_uri, items=split, position=None)
-        time.sleep(6)
+        time.sleep(sleep_rate)
         split_index += 99
 
-def playlist_creation(items, user_uri):
+def playlist_creation(items, user):
     all_songs = []
     for i in range(len(items)):
         # Key words used to filter out holiday music
         holiday_key_words = ['Christmas','christmas','Santa','santa']
         item = items[i]
         name = item.name
+        user_uri = user.playlist_uri
+        allow_explicit = user.explicit
+        allow_holiday = user.holiday
+        spl = user.songs_per_listener
+        nra = user.number_of_related_artists
+        rasc = user.related_artist_songs_count
         songs = []
         artists = [
             item.a1, item.a2, item.a3, item.a4, item.a5, 
@@ -334,66 +345,55 @@ def playlist_creation(items, user_uri):
 
         # Loop through artist list
         for t in range(len(artists_clean)):
-            artist_name = artists_clean[t]
+            artist_name = artists_clean[t] 
             search_results = sp.search(q='artist:' + artist_name, type='artist', limit=1)
             if search_results['artists']['total'] == 0: # If no artists found
                 print(f"No results for {artist_name}") # Print message
                 continue # Skip
             print(f"Searching {artist_name}'s related artists")
-            time.sleep(6)
+            time.sleep(sleep_rate)
 
-            # Collect URI's
+            # Collect main artist URI
             artist_uri = search_results['artists']['items'][0]['uri']
             related_artist_search_results = sp.artist_related_artists(artist_uri) # Search related artists
-            related_artist_uri1 = related_artist_search_results['artists'][0]['uri']
-            related_artist_uri2 = related_artist_search_results['artists'][1]['uri']
-            related_artist_uri3 = related_artist_search_results['artists'][2]['uri']
 
-            # Collect top tracks for each artist
+            related_artist_uris = []
+            samples = []
+            for q in range(nra):
+                related_artist_uris.append(related_artist_search_results['artists'][q]['uri'])
+            for w, uri in enumerate(related_artist_uris):
+                top_tracks = sp.artist_top_tracks(uri, country='US')
+                top_tracks_sample = random.sample(top_tracks['tracks'],rasc)
+                samples.extend(top_tracks_sample)
+              
+            # Collect top tracks for main artist
             artist_top_songs = sp.artist_top_tracks(artist_uri,country='US')
-            related_artist_top_songs1 = sp.artist_top_tracks(related_artist_uri1, country='US')
-            print(f'Related artist 1: {related_artist_search_results["artists"][0]["name"]}')
-            time.sleep(6)
-            related_artist_top_songs2 = sp.artist_top_tracks(related_artist_uri2, country='US')
-            print(f'Related artist 2: {related_artist_search_results["artists"][1]["name"]}')
-            time.sleep(6)
-            related_artist_top_songs3 = sp.artist_top_tracks(related_artist_uri3, country='US')
-            print(f'Related artist 3: {related_artist_search_results["artists"][2]["name"]}')
-            time.sleep(6)
+            samples.extend(artist_top_songs)
 
-            # Randomly select one song from each related artist
-            related_artist_top_songs_sample1 = random.sample(related_artist_top_songs1['tracks'],1)
-            related_artist_top_songs_sample2 = random.sample(related_artist_top_songs2['tracks'],1)
-            related_artist_top_songs_sample3 = random.sample(related_artist_top_songs3['tracks'],1)
-
-            # Filter out explicit and holiday tracks
-            sample_lists = [related_artist_top_songs_sample1, related_artist_top_songs_sample2, related_artist_top_songs_sample3] # List of sampled tracks
-            for sample in sample_lists:
+            for sample in samples:
                 for j in range(len(sample)):
-                    if sample[j]['name'] in holiday_key_words: # Check for holiday track
-                        print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for Holiday status.")
-                        continue
-                    if sample[j]['explicit'] == False: # Check for explicit
-                        print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
-                        songs.append(sample[j]['uri'])
-                    else:
-                        print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for explicit rating.")
+                  if allow_holiday == False:
+                      if sample[j]['name'] in holiday_key_words: # Check for holiday track
+                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for Holiday status.")
+                          continue
+                  if allow_explicit == False:
+                      if sample[j]['explicit'] == False: # Check for explicit
+                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
+                          songs.append(sample[j]['uri'])
+                      else:
+                          print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} removed for explicit rating.")
+                  else:
+                      print(f"Track '{sample[j]['name']}' by {sample[j]['artists'][0]['name']} added to sample pool.")
+                      songs.append(sample[j]['uri'])
+                    
 
-            for j in range(len(artist_top_songs['tracks'])):
-                if artist_top_songs['tracks'][j]['name'] in holiday_key_words: # Check for holiday track
-                    print(f"Track '{artist_top_songs['tracks'][j]['name']}' by {artist_top_songs['tracks'][j]['artists'][0]['name']} removed for Holiday status.")
-                    continue
-                if artist_top_songs['tracks'][j]['explicit'] == False: # Check for explicit
-                    print(f"Track '{artist_top_songs['tracks'][j]['name']}' by {artist_top_songs['tracks'][j]['artists'][0]['name']} added to sample pool.")
-                    songs.append(artist_top_songs['tracks'][j]['uri'])
-                else:
-                    print(f"Track '{artist_top_songs['tracks'][j]['name']}' by {artist_top_songs['tracks'][j]['artists'][0]['name']} removed for explicit rating.")
-
-        # If song count is below 30
-        if len(songs) < 30:
+        # If song count is below spl
+        if len(songs) < spl:
             songs_sample = random.sample(songs, len(songs))
             if len(songs) > 2:
-                filler_tracks = random.sample(related_artist_top_songs1['tracks'],3) # Grab 3 filler tracks from related artist 1
+                filler_artist = related_artist_search_results['artists'][0]['uri']
+                filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')
+                filler_tracks = random.sample(filler_top_tracks['tracks'],3) # Grab 3 filler tracks from related artist 1
                 for j in range(len(filler_tracks)):
                     if filler_tracks[j]['explicit'] == False: # Check if songs are explicit
                         songs_sample.append(filler_tracks[j]['uri'])
@@ -403,7 +403,7 @@ def playlist_creation(items, user_uri):
                         
         # If song count is 30 or greater, take a random sample of 30 songs and add to playlist         
         else: 
-            songs_sample = random.sample(songs,30)
+            songs_sample = random.sample(songs,spl)
         all_songs.extend(songs_sample)
     # Add playlists to spotify
     add_songs_to_playlist(all_songs, user_uri)
@@ -437,7 +437,7 @@ def create_playlist():
     items = Item.query.filter_by(user_id=user_id, selected=True).all()
     if items:
         try:
-            playlist_creation(items, user_uri)
+            playlist_creation(items, user)
             return jsonify(playlist_url)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
