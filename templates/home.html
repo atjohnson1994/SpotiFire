@@ -142,7 +142,7 @@
         <nav>
             <a id="openDeleteModalBtn">Remove Listener</a>
             <a id="newListenerButton">New Listener</a>
-            <a id="openPlaylistButton">Create Playlist</a>
+            <a id="openPlaylistModalBtn">Create Playlist</a>
             <a id="openSettingsModalBtn">Settings</a>
         </nav>
     
@@ -338,14 +338,17 @@
                 for (let i = 0; i < data.listeners.length; i++) {
                     let newElement = document.createElement('div');
                     newElement.id = 'listener' + i;
+
+                    // Create a checkbox input element
+                    let checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'checkbox' + i;
+
+                    // Append the checkbox to the newElement
+                    newElement.appendChild(checkbox);
+
+                    // Create a text node for the listener's name
                     let textContent = data.listeners[i].name;
-                    
-                    // Create a span element for the checkmark
-                    let checkmark = document.createElement('span');
-                    checkmark.textContent = '✓'; // Unicode checkmark symbol
-                    
-                    // Append the checkmark and text content to the newElement
-                    newElement.appendChild(checkmark);
                     newElement.appendChild(document.createTextNode(textContent));
                     
                     playlistListeners.appendChild(newElement);
