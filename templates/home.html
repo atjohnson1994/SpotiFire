@@ -333,15 +333,23 @@
                     postsContainer.appendChild(newElement);
                 }
 
-                // Create playlist modal
+                // Populate the playlist modal
                 let playlistListeners = document.getElementById('playlistListeners');
                 for (let i = 0; i < data.listeners.length; i++) {
                     let newElement = document.createElement('div');
                     newElement.id = 'listener' + i;
                     let textContent = data.listeners[i].name;
-                    newElement.textContent = textContent;
-                    playlistListeners.appendChild(newElement)
-                
+                    
+                    // Create a span element for the checkmark
+                    let checkmark = document.createElement('span');
+                    checkmark.textContent = '✓'; // Unicode checkmark symbol
+                    
+                    // Append the checkmark and text content to the newElement
+                    newElement.appendChild(checkmark);
+                    newElement.appendChild(document.createTextNode(textContent));
+                    
+                    playlistListeners.appendChild(newElement);
+                }
                 console.log('Fetched data:', data);
 
             } catch (error) {
