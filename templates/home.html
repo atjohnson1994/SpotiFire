@@ -388,7 +388,11 @@
                             });
                         }
                     });
-                    holding = selectedListeners
+                    holding = {
+                        listeners: selectedListeners,
+                        data: data
+                    };
+                    
                     console.log("Sending data:", selectedListeners); // Log the data being sent
                     
                     fetch('/update-listeners', {
@@ -766,7 +770,7 @@ document.getElementById('deleteItemForm').addEventListener('submit', async (even
 function openModalWithCountdown() {
     var modal = document.getElementById('timerModal');
     var span = document.getElementById('close_timer');
-    var nra = holding.content.number_of_related_artists
+    var nra = holding.data.content.number_of_related_artists
     const tac = countSelectedArtists(holding)
     console.log(tac)
 
@@ -810,10 +814,11 @@ function openModalWithCountdown() {
 function countSelectedArtists(holding) {
     let artistSet = new Set();
 
-    holding.forEach(listener => {
+    holding.listeners.forEach((listener, index) => {
         if (listener.selected) {
+            let dataListener = holding.data.listeners[index];
             for (let i = 1; i <= 10; i++) {
-                let artist = listener[`a${i}`];
+                let artist = dataListener[`a${i}`];
                 if (artist) {
                     artistSet.add(artist);
                 }
