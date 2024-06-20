@@ -130,6 +130,7 @@
     </style>
 </head>
 <body>
+    <a href="#" id="logoutBtn">Logout</a>
     <div class="profile-container">
         <div class="profile-header">
             <div class="user-info">
@@ -263,7 +264,7 @@
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Timer Modal -->
 <div id="timerModal" class="modal">
     <div class="modal-content">
       <span id="close_timer" class="close">&times;</span>
@@ -271,14 +272,8 @@
       <p>Please wait: <span id="countdown"></span></p>
     </div>
   </div>
-
-
-
-
-
-
-
-    <a href="#" id="logoutBtn">Logout</a>
+    
+    
 </body>
 <script>
     var holding = "";
@@ -393,7 +388,7 @@
                             });
                         }
                     });
-                    holding = data
+                    holding = selectedListeners
                     console.log("Sending data:", selectedListeners); // Log the data being sent
                     
                     fetch('/update-listeners', {
@@ -815,7 +810,7 @@ function openModalWithCountdown() {
 function countSelectedArtists(holding) {
     let artistSet = new Set();
 
-    holding.listeners.forEach(listener => {
+    holding.forEach(listener => {
         if (listener.selected) {
             for (let i = 1; i <= 10; i++) {
                 let artist = listener[`a${i}`];
