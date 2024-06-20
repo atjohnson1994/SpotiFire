@@ -134,7 +134,7 @@ def home_get():
         if user:
             # User is authenticated
             content = {'username': user.username, 'playlist_url': user.playlist_url, 'songs_per_listener': user.songs_per_listener, 'explicit': user.explicit, 'holiday': user.holiday, 'number_of_related_artists': user.number_of_related_artists, 'related_artist_songs_count': user.related_artist_songs_count}
-            listeners = [{'id': item.id, 'name': item.name, 
+            listeners = [{'id': item.id, 'name': item.name, 'selected': item.selected,
                           'a1': item.a1, 'a2': item.a2, 'a3': item.a3, 
                           'a4': item.a4, 'a5': item.a5, 'a6': item.a6, 
                           'a7': item.a7, 'a8': item.a8, 'a9': item.a9, 
@@ -155,6 +155,48 @@ def home_get():
     except Exception as e:
         return jsonify({"message": "Error processing request", "error": str(e)}), 500
 
+
+@app.route('/update-listeners', methods=['POST'])
+@jwt_required()
+def update_listeners():
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.filter_by(id=user_id).first()
+        
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+        
+        data = request.json
+        listeners = data.get('listeners', [])
+        
+        print(f"Received data: {listeners}")
+
+        updated_item_ids = []
+
+        for listener in listeners:
+            print(f"Processing listener: {listener}")
+            item = Item.query.filter_by(id=listener['id'], user_id=user_id).first()
+            if item:
+                print(f"Found item: {item.id}, updating selected to {listener['selected']}")
+                item.selected = listener['selected']
+                db.session.add(item)
+                updated_item_ids.append(item.id)
+            else:
+                print(f"Item with id {listener['id']} not found for user {user_id}")
+
+        db.session.commit()
+        print("Database commit successful")
+        
+        # Verify changes
+        updated_items = Item.query.filter(Item.id.in_(updated_item_ids)).all()
+        print("Updated items in database:", [(item.id, item.selected) for item in updated_items])
+        
+        return jsonify({"message": "Listeners updated successfully"}), 200
+
+    except Exception as e:
+        print("Error processing request:", str(e))
+        db.session.rollback()
+        return jsonify({"message": "Error processing request", "error": str(e)}), 500
 
 # Landing page route
 @app.route('/')
@@ -425,6 +467,7 @@ def create_playlist():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'No items found for this user'}), 404
+
 
 if __name__ == '__main__':
     app.run(debug=True)

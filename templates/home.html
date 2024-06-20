@@ -256,11 +256,21 @@
 <div id="playlistModal" class="modal hidden">
     <div class="modal-content" id=playlistListeners>
         <span id="closePlaylistModal" class="close">&times;</span>
-            <p>Listener</p>
-            <button id="createPlaylistButton">Create Playlist</button>
+        <form id="playlistForm">
+            <input type="submit" value="Submit">
+            
+        </form>
     </div>
 </div>
 
+<!-- Modal -->
+<div id="timerModal" class="modal">
+    <div class="modal-content">
+      <span id="close_timer" class="close">&times;</span>
+      <p>Creating playlist!</p>
+      <p>Please wait: <span id="countdown"></span></p>
+    </div>
+  </div>
 
 
 
@@ -271,6 +281,8 @@
     <a href="#" id="logoutBtn">Logout</a>
 </body>
 <script>
+    var holding = "";
+
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM fully loaded and parsed');
 
@@ -333,26 +345,98 @@
                     postsContainer.appendChild(newElement);
                 }
 
-                // Populate the playlist modal
-                let playlistListeners = document.getElementById('playlistListeners');
-                for (let i = 0; i < data.listeners.length; i++) {
-                    let newElement = document.createElement('div');
-                    newElement.id = 'listener' + i;
-
-                    // Create a checkbox input element
-                    let checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = 'checkbox' + i;
-
-                    // Append the checkbox to the newElement
-                    newElement.appendChild(checkbox);
-
-                    // Create a text node for the listener's name
-                    let textContent = data.listeners[i].name;
-                    newElement.appendChild(document.createTextNode(textContent));
+                // Function to populate the playlist form with checkboxes
+                function populatePlaylistForm(data) {
+                    let playlistForm = document.getElementById('playlistForm');
                     
-                    playlistListeners.appendChild(newElement);
-                }
+                    // Preserve the submit button
+                    let submitButton = playlistForm.querySelector('input[type="submit"]');
+
+                    // Clear out other child nodes
+                    playlistForm.innerHTML = '';
+
+                    // Append preserved submit button back to the form
+                    playlistForm.appendChild(submitButton);
+                    
+                    for (let i = 0; i < data.listeners.length; i++) {
+                        let label = document.createElement('label');
+                        label.htmlFor = 'checkbox' + i;
+                        label.textContent = data.listeners[i].name;
+
+                        let checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = 'checkbox' + i;
+                        checkbox.name = 'listener' + i;
+                        
+                        if (data.listeners[i].selected) {
+                            checkbox.checked = true;
+                        }
+
+                        // Append the label and checkbox before the submit button
+                        playlistForm.insertBefore(label, submitButton);
+                        playlistForm.insertBefore(checkbox, submitButton);
+                    }
+                } 
+                populatePlaylistForm(data);
+                // Function to handle selected submission
+                document.getElementById('playlistForm').addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const token = localStorage.getItem('jwtToken');
+                    let selectedListeners = [];
+                    
+                    data.listeners.forEach((listener, index) => {
+                        let checkbox = document.getElementById('checkbox' + index);
+                        if (checkbox) {
+                            selectedListeners.push({
+                                id: listener.id,
+                                selected: checkbox.checked
+                            });
+                        }
+                    });
+                    holding = data
+                    console.log("Sending data:", selectedListeners); // Log the data being sent
+                    
+                    fetch('/update-listeners', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ listeners: selectedListeners }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success:', data);
+                        
+                        // Check if the button already exists in the form
+                        var existingButton = document.getElementById('playlistForm').querySelector('#createPlaylistButton');
+
+                        if (!existingButton) {
+                            // If the button doesn't exist, create and add it
+                            let createPlaylistButton = document.createElement('button');
+                            createPlaylistButton.textContent = "Create Playlist";
+                            createPlaylistButton.id = 'createPlaylistButton';
+                            var form = document.getElementById('playlistForm');
+                            form.appendChild(createPlaylistButton);
+
+                            // Add event listener to the button
+                            createPlaylistButton.addEventListener('click', handleCreatePlaylistButtonClick);
+                        } else {
+                            // Button already exists in the form, no need to add it again
+                            console.log("Button already exists in the form.");
+                        }
+
+                        
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                        // Handle error, e.g., show an error message
+                    });
+                });
+
+
+
+
                 console.log('Fetched data:', data);
 
             } catch (error) {
@@ -513,6 +597,8 @@ const handleCreatePlaylistButtonClick = async (event) => {
 
     try {
         // Call createPlaylist function with event object
+        openModalWithCountdown();
+        closePlaylistModal();
         await createPlaylist(event);
     } catch (error) {
         console.error('Error while creating playlist:', error.message);
@@ -520,8 +606,7 @@ const handleCreatePlaylistButtonClick = async (event) => {
     }
 };
 
-// Add event listener to the button
-document.getElementById('createPlaylistButton').addEventListener('click', handleCreatePlaylistButtonClick);
+
 
 // Create playlist
 const createPlaylist = async (event) => {
@@ -574,6 +659,8 @@ const closeDeleteModal = () => {
     modal.style.display = 'none';
     document.getElementById('deleteItemForm').reset(); // Reset form on close
 };
+
+
 
 // Function to close the settings modal
 const closeSettingsModal = () => {
@@ -636,6 +723,14 @@ window.addEventListener('click', (event) => {
     }
 });
 
+// Event listener for clicking outside the modal to close it
+window.addEventListener('click', (event) => {
+    const modal = document.getElementById('timerModal');
+    if (event.target === modal) {
+        closeTimerModal();
+    }
+});
+
 // Event listener for form submission to delete item
 document.getElementById('deleteItemForm').addEventListener('submit', async (event) => {
     event.preventDefault(); // Prevent default form submission
@@ -672,7 +767,67 @@ document.getElementById('deleteItemForm').addEventListener('submit', async (even
     }
 });
 
+// Function to open modal and start countdown
+function openModalWithCountdown() {
+    var modal = document.getElementById('timerModal');
+    var span = document.getElementById('close_timer');
+    var nra = holding.content.number_of_related_artists
+    const tac = countSelectedArtists(holding)
+    console.log(tac)
 
+    // Show modal
+    modal.style.display = "block";
+
+    // Countdown timer setup 
+    var countdownElement = document.getElementById('countdown');
+    var countdownTime = nra*5*(nra+1)*tac; // in seconds
+    countdownElement.textContent = countdownTime;
+
+    // Countdown interval
+    var countdownInterval = setInterval(function() {
+        countdownTime--;
+        countdownElement.textContent = countdownTime;
+
+        if (countdownTime <= 0) {
+            clearInterval(countdownInterval);
+            closeTimerModal(); // Close modal when countdown ends
+        }
+    }, 1000);
+
+    // Function to close the modal
+    function closeTimerModal() {
+        modal.style.display = "none";
+        clearInterval(countdownInterval); // Stop countdown if modal is closed manually
+    }
+
+    // Close modal when close button (x) is clicked
+    span.onclick = function() {
+        closeTimerModal();
+    };
+
+    // Close modal if user clicks outside the modal content
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            closeTimerModal();
+        }
+    };
+}
+function countSelectedArtists(holding) {
+    let artistSet = new Set();
+
+    holding.listeners.forEach(listener => {
+        if (listener.selected) {
+            for (let i = 1; i <= 10; i++) {
+                let artist = listener[`a${i}`];
+                if (artist) {
+                    artistSet.add(artist);
+                }
+            }
+        }
+    });
+
+    return artistSet.size;
+}
 
 </script>
 </html>
