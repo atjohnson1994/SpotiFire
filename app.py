@@ -1,3 +1,4 @@
+# Import Flask dependencies
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -5,7 +6,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 
-# Spotify imports
+# Import Spotify dependencies
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import pandas as pd
@@ -19,15 +20,11 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=c_id,
                                                client_secret=s_id,
                                                redirect_uri="http://localhost:1410/",
                                                scope=("user-library-read", "playlist-modify-private")))
+# Set SpotiFire ID
 me = my_id
+
+# Spotify API rate limiter
 sleep_rate=5
-# Playlist IDs
-playlist1_uid = p1_uid
-playlist2_uid = p2_uid
-playlist3_uid = p3_uid
-playlist4_uid = p4_uid
-playlist_combo_uid = pc_uid
-playlist_combo2_uid = pc2_uid
 
 # Initialize app
 app = Flask(__name__)
@@ -160,39 +157,33 @@ def home_get():
 @jwt_required()
 def update_listeners():
     try:
-        user_id = get_jwt_identity()
-        user = User.query.filter_by(id=user_id).first()
-        
-        if not user:
-            return jsonify({"message": "User not found"}), 404
-        
-        data = request.json
-        listeners = data.get('listeners', [])
-        
-        print(f"Received data: {listeners}")
+        user_id = get_jwt_identity() # Get user ID
+        user = User.query.filter_by(id=user_id).first() # Query user ID in database
+        if not user: # If user isn't found
+            return jsonify({"message": "User not found"}), 404 # Error message
+        data = request.json # Hold JSON response
+        listeners = data.get('listeners', []) # Extract listeners from response
+        print(f"Received data: {listeners}") # Log successful receibt of response
+        updated_item_ids = [] # Clear id list
 
-        updated_item_ids = []
-
-        for listener in listeners:
-            print(f"Processing listener: {listener}")
-            item = Item.query.filter_by(id=listener['id'], user_id=user_id).first()
-            if item:
-                print(f"Found item: {item.id}, updating selected to {listener['selected']}")
-                item.selected = listener['selected']
-                db.session.add(item)
-                updated_item_ids.append(item.id)
-            else:
-                print(f"Item with id {listener['id']} not found for user {user_id}")
-
-        db.session.commit()
-        print("Database commit successful")
+        # Query all listeners for user, update selected status, commit changes to database
+        for listener in listeners: # For each listener 
+            print(f"Processing listener: {listener}") # Log attempt to update listener
+            item = Item.query.filter_by(id=listener['id'], user_id=user_id).first() # Query database for listener ID
+            if item: # If listener is found
+                print(f"Found item: {item.id}, updating selected to {listener['selected']}") # Log that listener was found
+                item.selected = listener['selected'] # Update listener selection
+                db.session.add(item) # Add changes to listener
+                updated_item_ids.append(item.id) # Add listener id to list
+            else: # If no listener is found
+                print(f"Item with id {listener['id']} not found for user {user_id}") # Error message
+        db.session.commit() # Commit changes to database
+        print("Database commit successful") # Log successful database update
         
         # Verify changes
-        updated_items = Item.query.filter(Item.id.in_(updated_item_ids)).all()
-        print("Updated items in database:", [(item.id, item.selected) for item in updated_items])
-        
+        updated_items = Item.query.filter(Item.id.in_(updated_item_ids)).all() # Query all updated listeners
+        print("Updated items in database:", [(item.id, item.selected) for item in updated_items]) # Log the attempt   
         return jsonify({"message": "Listeners updated successfully"}), 200
-
     except Exception as e:
         print("Error processing request:", str(e))
         db.session.rollback()
@@ -225,11 +216,11 @@ def landing():
 @jwt_required()
 def get_user_items():
     user_id = get_jwt_identity()
-    items = Item.query.filter_by(user_id=user_id).all()
-    if items:
-        return jsonify([{'id': item.id, 'name': item.name} for item in items])
-    else:
-        return jsonify({'error': 'No items found for this user'}), 404
+    items = Item.query.filter_by(user_id=user_id).all() # Query all listeners for the user
+    if items: # If listeners are found
+        return jsonify([{'id': item.id, 'name': item.name} for item in items]) # Return JSON response with all listeners
+    else: # If no listeners are found
+        return jsonify({'error': 'No items found for this user'}), 404 # Error message
 
 # # Selected route
 # @app.route('/update_listener/<int:listener_id>', methods=['POST'])
@@ -382,7 +373,7 @@ def playlist_creation(items, user):
         artists = [
             item.a1, item.a2, item.a3, item.a4, item.a5, 
             item.a6, item.a7, item.a8, item.a9, item.a10
-        ]
+        ] # Extract artists from listener
         artists_clean = pd.Series(artists).dropna().reset_index(drop=True) # Remove NA's
 
         # Search all artists and add songs to sample pool
@@ -405,7 +396,7 @@ def playlist_creation(items, user):
             artist_top_songs = sp.artist_top_tracks(artist_uri, country='US')['tracks'] # Search the main artist's top songs
             samples.extend(artist_top_songs) # Add main artist song URI's to the sample pool
 
-            # For
+            # Remove holiday and explicit songs depending on user settings
             for track in samples: # For each song
                 if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words): # If allow_holiday=false, check song title for holiday words
                     print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.") # Log that song is removed
@@ -416,23 +407,24 @@ def playlist_creation(items, user):
                 print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.") # Log successful addition of song to sample pool
                 songs.append(track['uri']) # Add song uri to sample pool
 
-        if len(songs) < spl:
-            if len(songs) > 2:
-                filler_artist = related_artists[0]['uri']
-                filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')['tracks']
-                filler_tracks = random.sample(filler_top_tracks, min(3, len(filler_top_tracks)))
+        if len(songs) < spl: # If sample pool is less than songs per listener value
+            if len(songs) > 2: # Verify the sample pool isn't empty
+                filler_artist = related_artists[0]['uri'] # Extract related artist URI
+                filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')['tracks'] # Search related artist top songs
+                filler_tracks = random.sample(filler_top_tracks, min(3, len(filler_top_tracks))) # Extract 3 songs from related artist
                 for track in filler_tracks:
-                    if not track['explicit']:
-                        songs.append(track['uri'])
-                        print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.")
-                    else:
+                    if not allow_explicit and track['explicit']: # allow_explicit=false, check song explicit rating
                         print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.")
-        else:
-            songs = random.sample(songs, spl)
-
-        all_songs.extend(songs)
-
-    add_songs_to_playlist(all_songs, user_uri)
+                        continue # Skip song
+                    if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words): # If allow_holiday=false, check song title for holiday words
+                        print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.") # Log that song is removed
+                        continue # Skip song
+                    songs.append(track['uri']) # Add song URI to sample pool
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.") # Log successful addition of song to sample pool
+        else: # If sample pool is greater or equal to user spl
+            songs = random.sample(songs, spl) # Randomly select songs from sample pool equal to user spl
+        all_songs.extend(songs) # Add listeners selected song URI's to the playlist's URI
+    add_songs_to_playlist(all_songs, user_uri) # Call function to add songs to spotify playlist
   
 # Route to create a new playlist
 @app.route('/create', methods=['GET'])
@@ -441,29 +433,29 @@ def create_playlist():
     user_id = get_jwt_identity()
     user = User.query.filter_by(id=user_id).first()
 
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    if not user: # If no user found
+        return jsonify({'error': 'User not found'}), 404 # Return error
     
     username = user.username
-    if user.playlist_uri:
-        user_uri = user.playlist_uri
-        playlist_url = user.playlist_url
-    else:
+    if user.playlist_uri: # If user already has a playlist URI associated with account
+        user_uri = user.playlist_uri # Extract playlist URI
+        playlist_url = user.playlist_url # Extract playlist URL
+    else: # If user has no playlist URI
         try:
-            playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist", public=False, collaborative=False, description='')
-            playlist_id = playlist['id']
-            sp.playlist_change_details(playlist_id, collaborative=True)
-            user_uri = playlist['uri']
-            playlist_url = playlist['external_urls']['spotify']
-            user.playlist_uri = user_uri
-            user.playlist_url = playlist_url
-            db.session.commit()
+            playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist", public=False, collaborative=False, description='') # Create new playlist
+            playlist_id = playlist['id'] # Extract playlist ID
+            sp.playlist_change_details(playlist_id, collaborative=True) # Set playlist to collaborative
+            user_uri = playlist['uri'] # Extract playlist URI
+            playlist_url = playlist['external_urls']['spotify'] # Extract playlist URL
+            user.playlist_uri = user_uri # Store playlist URI in user's account
+            user.playlist_url = playlist_url # Store playlist URL in user's account
+            db.session.commit() # Commit changes to database
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     items = Item.query.filter_by(user_id=user_id, selected=True).all()
     if items:
         try:
-            playlist_creation(items, user)
+            playlist_creation(items, user) # SpotiFire function
             return jsonify(playlist_url)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
