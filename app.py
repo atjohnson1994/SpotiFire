@@ -155,7 +155,7 @@ def home_get():
     except Exception as e:
         return jsonify({"message": "Error processing request", "error": str(e)}), 500
 
-
+# Selected route (from 'create playlist' modal)
 @app.route('/update-listeners', methods=['POST'])
 @jwt_required()
 def update_listeners():
@@ -231,15 +231,15 @@ def get_user_items():
     else:
         return jsonify({'error': 'No items found for this user'}), 404
 
-# Selected route
-@app.route('/update_listener/<int:listener_id>', methods=['POST'])
-def update_listener(listener_id):
-    selected = request.json.get('selected')
-    for listener in Item:
-        if listener['id'] == listener_id:
-            listener['selected'] = selected
-            break
-    return jsonify({'success': True})
+# # Selected route
+# @app.route('/update_listener/<int:listener_id>', methods=['POST'])
+# def update_listener(listener_id):
+#     selected = request.json.get('selected')
+#     for listener in Item:
+#         if listener['id'] == listener_id:
+#             listener['selected'] = selected
+#             break
+#     return jsonify({'success': True})
 
 # Route to add a new listener
 @app.route('/items', methods=['POST'])
@@ -289,18 +289,18 @@ def get_user():
 
 
 
-# Route to update listener name (unused)
-@app.route('/items/<int:item_id>', methods=['PUT'])
-@jwt_required()
-def update_item(item_id):
-    item = Item.query.get(item_id)
-    if not item:
-        return jsonify({'error': 'Item not found'}), 404
+# # Route to update listener name (unused)
+# @app.route('/items/<int:item_id>', methods=['PUT'])
+# @jwt_required()
+# def update_item(item_id):
+#     item = Item.query.get(item_id)
+#     if not item:
+#         return jsonify({'error': 'Item not found'}), 404
 
-    name = request.json.get('name', None)
-    item.name = name
-    db.session.commit()
-    return jsonify({'id': item.id, 'name': item.name})
+#     name = request.json.get('name', None)
+#     item.name = name
+#     db.session.commit()
+#     return jsonify({'id': item.id, 'name': item.name})
 
 # Route to update user settings
 @app.route('/settings', methods=['POST'])
@@ -352,7 +352,7 @@ def delete_item(item_name):
         db.session.rollback()
         return jsonify({'message': 'Failed to delete item', 'error': str(e)}), 500
 
-# Add songs to playlist
+# Function that adds the songs to the spotify playlist
 def add_songs_to_playlist(all_songs, user_uri):
     split_index = 0
     while split_index < len(all_songs):
@@ -364,56 +364,57 @@ def add_songs_to_playlist(all_songs, user_uri):
         time.sleep(sleep_rate)
         split_index += 99
 
+# SpotiFire
 def playlist_creation(items, user):
     all_songs = []
     holiday_key_words = ['christmas', 'santa']
 
+    # Import settings and artists
     for i in range(len(items)):
-        item = items[i]
-        user_uri = user.playlist_uri
-        allow_explicit = user.explicit
-        allow_holiday = user.holiday
-        spl = user.songs_per_listener
-        nra = user.number_of_related_artists
-        rasc = user.related_artist_songs_count
-        songs = []
+        item = items[i] # Listener
+        user_uri = user.playlist_uri # The user's playlist URI
+        allow_explicit = user.explicit # Explicit setting 
+        allow_holiday = user.holiday # Holiday setting
+        spl = user.songs_per_listener # Songs per listener
+        nra = user.number_of_related_artists # Number of related artists to be searched
+        rasc = user.related_artist_songs_count # Number of related artists songs to be added
+        songs = [] # Clear songs list
         artists = [
             item.a1, item.a2, item.a3, item.a4, item.a5, 
             item.a6, item.a7, item.a8, item.a9, item.a10
         ]
-        artists_clean = pd.Series(artists).dropna().reset_index(drop=True)
+        artists_clean = pd.Series(artists).dropna().reset_index(drop=True) # Remove NA's
 
-        for t in range(len(artists_clean)):
-            artist_name = artists_clean[t]
-            search_results = sp.search(q='artist:' + artist_name, type='artist', limit=1)
-            if search_results['artists']['total'] == 0:
-                print(f"No results for {artist_name}")
-                continue
-            print(f"Searching {artist_name}'s related artists")
-            time.sleep(sleep_rate)
+        # Search all artists and add songs to sample pool
+        for t in range(len(artists_clean)): # For each artist
+            artist_name = artists_clean[t] # Artist name
+            search_results = sp.search(q='artist:' + artist_name, type='artist', limit=1) # Search artist on spotify
+            if search_results['artists']['total'] == 0: # If search provides no results
+                print(f"No results for {artist_name}") # Log the error
+                continue # Next artist
+            print(f"Searching {artist_name}'s related artists") # Log
+            time.sleep(sleep_rate) # API request limiter
+            artist_uri = search_results['artists']['items'][0]['uri'] # Extract Artist URI
+            related_artist_search_results = sp.artist_related_artists(artist_uri) # Search related artists
+            related_artists = related_artist_search_results['artists'][:nra] # Extract related artists
+            samples = [] # Clear samples list
+            for related_artist in related_artists: # For each related artist
+                uri = related_artist['uri'] # Extract URI
+                top_tracks = sp.artist_top_tracks(uri, country='US') # Search related artist's top songs
+                samples.extend(random.sample(top_tracks['tracks'], min(rasc, len(top_tracks['tracks'])))) # Add related song URI's to sample pool
+            artist_top_songs = sp.artist_top_tracks(artist_uri, country='US')['tracks'] # Search the main artist's top songs
+            samples.extend(artist_top_songs) # Add main artist song URI's to the sample pool
 
-            artist_uri = search_results['artists']['items'][0]['uri']
-            related_artist_search_results = sp.artist_related_artists(artist_uri)
-
-            related_artists = related_artist_search_results['artists'][:nra]
-            samples = []
-            for related_artist in related_artists:
-                uri = related_artist['uri']
-                top_tracks = sp.artist_top_tracks(uri, country='US')
-                samples.extend(random.sample(top_tracks['tracks'], min(rasc, len(top_tracks['tracks']))))
-
-            artist_top_songs = sp.artist_top_tracks(artist_uri, country='US')['tracks']
-            samples.extend(artist_top_songs)
-
-            for track in samples:
-                if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words):
-                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.")
-                    continue
-                if not allow_explicit and track['explicit']:
-                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.")
-                    continue
-                print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.")
-                songs.append(track['uri'])
+            # For
+            for track in samples: # For each song
+                if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words): # If allow_holiday=false, check song title for holiday words
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.") # Log that song is removed
+                    continue # Skip song
+                if not allow_explicit and track['explicit']: # allow_explicit=false, check song explicit rating
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.") # Log that song is removed
+                    continue # Skip song
+                print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.") # Log successful addition of song to sample pool
+                songs.append(track['uri']) # Add song uri to sample pool
 
         if len(songs) < spl:
             if len(songs) > 2:
@@ -432,7 +433,8 @@ def playlist_creation(items, user):
         all_songs.extend(songs)
 
     add_songs_to_playlist(all_songs, user_uri)
-# Create playlist
+  
+# Route to create a new playlist
 @app.route('/create', methods=['GET'])
 @jwt_required()
 def create_playlist():
