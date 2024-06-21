@@ -4,18 +4,58 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Register</title>
+    <style>
+      .container {
+          max-width: 200px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: #fff;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          margin-top: 50px;
+      }
+      .login-button {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #1aac4a;
+          color: #fff;
+          text-decoration: none;
+          border-radius: 5px;
+          font-size: 16px;
+          margin-top: 20px;
+      }
+      .login-button:hover {
+          background-color: #0056b3;
+      }
+      body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #f0f0f0;
+      }
+      form {
+          margin-top: 20px;
+      }
+  </style>
   </head>
   <body>
-    <div>
-      <h2>Register</h2>
+    <div class="container">
       <form id="register-form">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username"><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password"><br>
-        <button type="submit">Register</button>
+          <p>
+              Username:
+          </p>
+          <input type="text" id="username" placeholder="Username" required>
+          <br>
+          <br>
+          <p>
+              Password:
+          </p>
+          <input type="password" id="password" placeholder="Password" required>
+          <br>
+          <br>
+          <button type="submit" class="login-button">Register</button>
       </form>
-    </div>
+  </div>
 
     <script>
       document.getElementById('register-form').addEventListener('submit', async function(event) {
@@ -38,6 +78,7 @@
           window.location.href = '/login'
         } else {
           console.error('Registration failed:', data);
+          alert('Registration failed');
         }
       });
     </script>

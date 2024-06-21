@@ -11,17 +11,12 @@
             padding: 0;
             background-color: #f0f0f0;
         }
-        header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 1rem 0;
-            text-align: center;
-        }
         .profile-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             margin: 2rem 0;
+            align-items: center;
         }
         .profile-header {
             display: flex;
@@ -77,6 +72,7 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border-radius: 8px;
             margin-top: 1rem;
+            text-align: center;
         }
         footer {
             background-color: #333;
@@ -88,90 +84,124 @@
             bottom: 0;
         }
         .hidden {
-    display: none;
-}
+        display: none;
+        }
+        .setting-value {
+            display: flex;
+            justify-content: center; /* Horizontally centers items */
+            align-items: center; /* Vertically centers items */
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            padding-top: 60px;
+            text-align: center;
+        }
 
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgb(0,0,0); /* Fallback color */
-    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-    padding-top: 60px;
-}
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+        }
 
-.modal-content {
-    background-color: #fefefe;
-    margin: 5% auto; /* 15% from the top and centered */
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
-}
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
 
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .login-button {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #1aac4a;
+          color: #fff;
+          text-decoration: none;
+          border-radius: 5px;
+          font-size: 16px;
+          margin-top: 20px;
+        }
+        .login-button:hover {
+            background-color: #0056b3;
+        }
+        #createPlaylistButton {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #1aac4a;
+          color: #fff;
+          text-decoration: none;
+          border-radius: 5px;
+          font-size: 16px;
+          margin-top: 20px;
+        }
+        #createPlaylistButton:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
-    <a href="#" id="logoutBtn">Logout</a>
+    <a href="#" id="logoutBtn" class="login-button">Logout</a>
     <div class="profile-container">
         <div class="profile-header">
             <div class="user-info">
-                <h2 id="username">John Doe</h2>
-                <p>@johndoe</p>
+                <h2 id="username">Unknown</h2>
                 <p>SpotiFire</p>
             </div>
         </div>
         
         <nav>
-            <a id="openDeleteModalBtn">Remove Listener</a>
             <a id="newListenerButton">New Listener</a>
+            <a id="openDeleteModalBtn">Remove Listener</a>
             <a id="openPlaylistModalBtn">Create Playlist</a>
-            <a id="openSettingsModalBtn">Settings</a>
+            <a id="openSettingsModalBtn">Edit Settings</a>
         </nav>
     
         <div class="content" id="posts">
-            <h2>Active Listeners</h2>
+            <h2>Listeners</h2>
         </div>
         <div class="content" id="followers">
-            <h2>Playlist</h2>
+            <h2>Playlist URL</h2>
             <p id="playlist_url"></p>
         </div>
 
         <div class="content" id="settings">
             <h2>Settings</h2>
-            <p>Songs per listener:</p>
-            <p id="user_spl"></p>
-            <br>
-            <p>Allows explicit tracks:</p>
-            <p id="user_explicit"></p>
-            <br>
-            <p>Allows holiday tracks:</p>
-            <p id="user_holiday"></p>
-            <br>
-            <p>Number of related artists:</p>
-            <p id="user_nra"></p>
-            <br>
-            <p>Related artist songs count:</p>
-            <p id="user_rasc"></p>
-            <br>
+            <div class="setting-value">
+                <p>Songs per listener:</p>
+                <p id="user_spl" style="font-weight: bold;"></p>
+            </div>
+            <div class="setting-value">
+                <p>Allows explicit tracks:</p>
+                <p id="user_explicit" style="font-weight: bold;"></p>
+            </div>
+            <div class="setting-value">
+                <p>Allows holiday tracks:</p>
+                <p id="user_holiday" style="font-weight: bold;"></p>
+            </div>
+            <div class="setting-value">
+                <p>Number of related artists:</p>
+                <p id="user_nra" style="font-weight: bold;"></p>
+            </div>
+            <div class="setting-value">
+                <p>Related artist songs count:</p>
+                <p id="user_rasc" style="font-weight: bold;"></p>
+            </div>
         </div>
     </div>
     <div id="newListenerModal" class="modal hidden">
@@ -211,7 +241,7 @@
                 <label for="a10">Artist 10:</label>
                 <input type="text" id="a10" name="a10">
                 <br>
-                <input type="submit" value="Submit">
+                <input type="submit" value="Submit" class="login-button">
             </form>
         </div>
     </div>
@@ -223,7 +253,7 @@
             <label for="deleteItemName">Listener Name:</label>
             <input type="text" id="deleteItemName" name="deleteItemName" required>
             <br>
-            <input type="submit" value="Delete">
+            <input type="submit" value="Delete" class="login-button">
         </form>
     </div>
 </div>
@@ -248,7 +278,7 @@
             <label for="rasc">Related artist song count:</label>
             <input type="number" id="rasc" name="rasc" required>
             <br>
-            <input type="submit" value="Submit">
+            <input type="submit" value="Submit" class="login-button">
         </form>
     </div>
 </div>
@@ -258,8 +288,10 @@
     <div class="modal-content" id=playlistListeners>
         <span id="closePlaylistModal" class="close">&times;</span>
         <form id="playlistForm">
-            <input type="submit" value="Submit">
-            
+            <div id="listenerValues">
+                
+            </div>
+            <input type="submit" value="Submit" class="login-button">
         </form>
     </div>
 </div>
@@ -282,9 +314,7 @@
         console.log('DOM fully loaded and parsed');
 
         async function fetchData() {
-            console.log('Starting fetchData');
             const jwtToken = localStorage.getItem('jwtToken');
-            console.log('JWT Token from local storage:', jwtToken);
             if (!jwtToken) {
 
                 window.location.href = '/login';
@@ -314,9 +344,9 @@
                 document.getElementById('user_nra').textContent = data.content.number_of_related_artists;
                 document.getElementById('user_rasc').textContent = data.content.related_artist_songs_count;
                 document.getElementById('playlist_url').textContent = data.content.playlist_url + '?si=collaborate';
+                
                 // Active listeners container
                 let postsContainer = document.getElementById('posts');
-
                 for (let i = 0; i < data.listeners.length; i++) {
                     let newElement = document.createElement('div');
                     newElement.id = 'l' + i;
@@ -367,9 +397,10 @@
                             checkbox.checked = true;
                         }
 
-                        // Append the label and checkbox before the submit button
+                        // Append the label, checkbox, and <br> element before the submit button
                         playlistForm.insertBefore(label, submitButton);
                         playlistForm.insertBefore(checkbox, submitButton);
+                        playlistForm.insertBefore(document.createElement('br'), submitButton);
                     }
                 } 
                 populatePlaylistForm(data);
@@ -585,7 +616,7 @@ document.getElementById('addItemForm').addEventListener('submit', handleFormSubm
 // Event listener for form submission
 document.getElementById('settingsForm').addEventListener('submit', handleSettingsFormSubmit);
 
-// Function to close the modal (assuming it's a hidden class toggle)
+// Function to close the modal
 const closeModal = () => {
     document.getElementById('newListenerModal').classList.add('hidden');
 };
@@ -631,7 +662,6 @@ const createPlaylist = async (event) => {
         console.log('Playlist created successfully:', data);
         document.getElementById('playlist_url').textContent = data.playlist_url;
 
-        // Handle further processing of the response if needed
 
     } catch (error) {
         // Handle errors (e.g., network error, server error)

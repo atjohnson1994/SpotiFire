@@ -1,3 +1,4 @@
+############################# Set up ###########################################
 # Import Flask dependencies
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
@@ -75,6 +76,8 @@ class Item(db.Model):
 with app.app_context():
     db.create_all()
 
+################################# Routes ####################################################
+### Login ###
 # User login route to authenticate and return a JWT token
 # Route for the login page (GET request)
 @app.route('/login', methods=['GET'])
@@ -99,6 +102,7 @@ def login_submit():
     access_token = create_access_token(identity=user.id)
     return jsonify(access_token=access_token), 200
 
+### Register ###
 # Register route
 @app.route('/register', methods=['GET'])
 def register_form():
@@ -119,6 +123,7 @@ def register_submit():
     db.session.commit()
     return jsonify({'msg': 'User created successfully'}), 201
 
+### Home ###
 # Home route
 @app.route('/home', methods=['GET', 'POST', 'DELETE'])
 @jwt_required(optional=True)
@@ -152,6 +157,7 @@ def home_get():
     except Exception as e:
         return jsonify({"message": "Error processing request", "error": str(e)}), 500
 
+### Select/Unselect ###
 # Selected route (from 'create playlist' modal)
 @app.route('/update-listeners', methods=['POST'])
 @jwt_required()
@@ -189,27 +195,11 @@ def update_listeners():
         db.session.rollback()
         return jsonify({"message": "Error processing request", "error": str(e)}), 500
 
+### Landing ###
 # Landing page route
 @app.route('/')
 def landing():
     return render_template('landing.html')
-
-# # Route to get all items 
-# @app.route('/items', methods=['GET'])
-# @jwt_required()
-# def get_items():
-#     items = Item.query.all()
-#     return jsonify([{'id': item.id, 'name': item.name} for item in items])
-
-# # Route to get a specific item by ID
-# @app.route('/items/<int:item_id>', methods=['GET'])
-# @jwt_required()
-# def get_item(item_id):
-#     item = Item.query.get(item_id)
-#     if item:
-#         return jsonify({'id': item.id, 'name': item.name})
-#     else:
-#         return jsonify({'error': 'Item not found'}), 404
 
 # Get all listeners for the active user
 @app.route('/listeners', methods=['GET'])
@@ -222,16 +212,7 @@ def get_user_items():
     else: # If no listeners are found
         return jsonify({'error': 'No items found for this user'}), 404 # Error message
 
-# # Selected route
-# @app.route('/update_listener/<int:listener_id>', methods=['POST'])
-# def update_listener(listener_id):
-#     selected = request.json.get('selected')
-#     for listener in Item:
-#         if listener['id'] == listener_id:
-#             listener['selected'] = selected
-#             break
-#     return jsonify({'success': True})
-
+### Add Listener ###
 # Route to add a new listener
 @app.route('/items', methods=['POST'])
 @jwt_required()
@@ -266,33 +247,19 @@ def add_item():
     # Return a JSON response with the newly added item's details and HTTP status code 201 (Created)
     return jsonify({'id': new_item.id, 'name': new_item.name}), 201
 
-# Route to get username
-@app.route('/user', methods=['GET'])
-@jwt_required()
-def get_user():
-    user_id = get_jwt_identity()
-    user = User.query.filter_by(id=user_id).first()
-
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
-    return jsonify(username=user.username)
-
-
-
-# # Route to update listener name (unused)
-# @app.route('/items/<int:item_id>', methods=['PUT'])
+# # Route to get username
+# @app.route('/user', methods=['GET'])
 # @jwt_required()
-# def update_item(item_id):
-#     item = Item.query.get(item_id)
-#     if not item:
-#         return jsonify({'error': 'Item not found'}), 404
+# def get_user():
+#     user_id = get_jwt_identity()
+#     user = User.query.filter_by(id=user_id).first()
 
-#     name = request.json.get('name', None)
-#     item.name = name
-#     db.session.commit()
-#     return jsonify({'id': item.id, 'name': item.name})
+#     if not user:
+#         return jsonify({"message": "User not found"}), 404
 
+#     return jsonify(username=user.username)
+
+### Settings ###
 # Route to update user settings
 @app.route('/settings', methods=['POST'])
 @jwt_required()
@@ -317,6 +284,7 @@ def update_settings():
     
     return jsonify({'message': 'User settings updated successfully'}), 200
 
+### Remove Listener ###
 # Route to remove listener
 @app.route('/items/<string:item_name>', methods=['DELETE'])
 @jwt_required()
@@ -343,7 +311,45 @@ def delete_item(item_name):
         db.session.rollback()
         return jsonify({'message': 'Failed to delete item', 'error': str(e)}), 500
 
-# Function that adds the songs to the spotify playlist
+### Create Playlist ###
+# Route to create a new playlist
+@app.route('/create', methods=['GET'])
+@jwt_required()
+def create_playlist():
+    user_id = get_jwt_identity()
+    user = User.query.filter_by(id=user_id).first()
+
+    if not user: # If no user found
+        return jsonify({'error': 'User not found'}), 404 # Return error
+    
+    username = user.username
+    if user.playlist_uri: # If user already has a playlist URI associated with account
+        user_uri = user.playlist_uri # Extract playlist URI
+        playlist_url = user.playlist_url # Extract playlist URL
+    else: # If user has no playlist URI
+        try:
+            playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist", public=False, collaborative=False, description='') # Create new playlist
+            playlist_id = playlist['id'] # Extract playlist ID
+            sp.playlist_change_details(playlist_id, collaborative=True) # Set playlist to collaborative
+            user_uri = playlist['uri'] # Extract playlist URI
+            playlist_url = playlist['external_urls']['spotify'] # Extract playlist URL
+            user.playlist_uri = user_uri # Store playlist URI in user's account
+            user.playlist_url = playlist_url # Store playlist URL in user's account
+            db.session.commit() # Commit changes to database
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    items = Item.query.filter_by(user_id=user_id, selected=True).all()
+    if items:
+        try:
+            playlist_creation(items, user) # SpotiFire function
+            return jsonify(playlist_url)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'No items found for this user'}), 404
+
+######################################## Functions #############################################
+# Add songs to spotify playlist
 def add_songs_to_playlist(all_songs, user_uri):
     split_index = 0
     while split_index < len(all_songs):
@@ -392,6 +398,7 @@ def playlist_creation(items, user):
             for related_artist in related_artists: # For each related artist
                 uri = related_artist['uri'] # Extract URI
                 top_tracks = sp.artist_top_tracks(uri, country='US') # Search related artist's top songs
+                time.sleep(sleep_rate)
                 samples.extend(random.sample(top_tracks['tracks'], min(rasc, len(top_tracks['tracks'])))) # Add related song URI's to sample pool
             artist_top_songs = sp.artist_top_tracks(artist_uri, country='US')['tracks'] # Search the main artist's top songs
             samples.extend(artist_top_songs) # Add main artist song URI's to the sample pool
@@ -426,41 +433,7 @@ def playlist_creation(items, user):
         all_songs.extend(songs) # Add listeners selected song URI's to the playlist's URI
     add_songs_to_playlist(all_songs, user_uri) # Call function to add songs to spotify playlist
   
-# Route to create a new playlist
-@app.route('/create', methods=['GET'])
-@jwt_required()
-def create_playlist():
-    user_id = get_jwt_identity()
-    user = User.query.filter_by(id=user_id).first()
 
-    if not user: # If no user found
-        return jsonify({'error': 'User not found'}), 404 # Return error
-    
-    username = user.username
-    if user.playlist_uri: # If user already has a playlist URI associated with account
-        user_uri = user.playlist_uri # Extract playlist URI
-        playlist_url = user.playlist_url # Extract playlist URL
-    else: # If user has no playlist URI
-        try:
-            playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist", public=False, collaborative=False, description='') # Create new playlist
-            playlist_id = playlist['id'] # Extract playlist ID
-            sp.playlist_change_details(playlist_id, collaborative=True) # Set playlist to collaborative
-            user_uri = playlist['uri'] # Extract playlist URI
-            playlist_url = playlist['external_urls']['spotify'] # Extract playlist URL
-            user.playlist_uri = user_uri # Store playlist URI in user's account
-            user.playlist_url = playlist_url # Store playlist URL in user's account
-            db.session.commit() # Commit changes to database
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    items = Item.query.filter_by(user_id=user_id, selected=True).all()
-    if items:
-        try:
-            playlist_creation(items, user) # SpotiFire function
-            return jsonify(playlist_url)
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    else:
-        return jsonify({'error': 'No items found for this user'}), 404
 
 
 if __name__ == '__main__':

@@ -3,14 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Our Website</title>
-    <!-- You can link CSS or any other necessary resources here -->
+    <title>SpotiFire</title>
+
     <style>
-        /* Example CSS for styling the login button */
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-top: 0;
+        }
+        .intro {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .intro p {
+            color: #666;
+            font-size: 1.2em;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-top: 50px;
+        }
         .login-button {
             display: inline-block;
             padding: 10px 20px;
-            background-color: #007bff; /* Bootstrap's primary blue color */
+            background-color: #1aac4a;
             color: #fff;
             text-decoration: none;
             border-radius: 5px;
@@ -18,12 +47,12 @@
             margin-top: 20px;
         }
         .login-button:hover {
-            background-color: #0056b3; /* Darker shade of blue on hover */
+            background-color: #0056b3;
         }
         .register-button {
             display: inline-block;
             padding: 10px 20px;
-            background-color: #700fdf; /* Bootstrap's primary blue color */
+            background-color: #b312d3; 
             color: #fff;
             text-decoration: none;
             border-radius: 5px;
@@ -31,22 +60,46 @@
             margin-top: 20px;
         }
         .register-button:hover {
-            background-color: #700fdf; /* Darker shade of blue on hover */
+            background-color: #700fdf; 
         }
+
+
+        .button-container {
+    display: flex;
+    justify-content: center; /* Horizontally centers items */
+    align-items: center; /* Vertically centers items */
+    height: 20vh; /* Adjust this to control vertical centering */
+}
+
+
+
     </style>
 </head>
 <body>
     <header>
-        <h1>Welcome to Our Website</h1>
+        
+        
     </header>
     <main>
-        <p>Explore our awesome features!</p>
+        <div class="container">
+            <div class="header">
+                <h1 style="text-align: center;">SpotiFire</h1>
+            
+        <div class="intro" id="intro">
+            <h4>SpotiFire is a playlist building app for when you need playlists that a whole 
+                group of people can enjoy together. 
+                You can create 'listeners' for each individual, selecting all of their favorite artists. 
+                Then SpotiFire will create a playlist with an even distribution of songs for each lisener. 
+                Great for parties or work-place settings!</h4>
+            </div>
+        </div>
+        
         <!-- Login button linking to the login page -->
-        <a href="/login" class="login-button">Log In</a>
-        <a href="/register" class="register-button">Register</a>
+        <div class="button-container">
+            <a href="/login" class="login-button">Log In</a>
+            <a href="/register" class="register-button">Register</a>
+        </div>
     </main>
-    <footer>
-        <p>&copy; 2024 Your Company Name. All rights reserved.</p>
-    </footer>
+
 </body>
 </html>
