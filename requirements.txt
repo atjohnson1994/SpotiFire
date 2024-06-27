@@ -5,4 +5,4 @@ Flask-JWT-Extended==4.6.0
 Werkzeug==2.3.6
 Flask-Migrate==4.0.5
 spotipy==2.23.0
-pandas==1.5.3
+pandas==2.2.2
