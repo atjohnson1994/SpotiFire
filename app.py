@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-
+import os
 # Import Spotify dependencies
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -15,8 +15,14 @@ from datetime import date
 import random
 import time
 
+# Access environment variables
+s_id = os.getenv("SECRET_KEY")
+c_id = os.getenv("API_KEY")
+jwt_key = os.getenv("JWT_KEY")
+my_id = os.getenv("MY_ID") 
+
 # Spotify setup
-from spotifire_id import *
+# from spotifire_id import *
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=c_id,
                                                client_secret=s_id,
                                                redirect_uri="http://localhost:1410/",
