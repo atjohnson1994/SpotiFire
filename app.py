@@ -15,6 +15,7 @@ import pandas as pd
 from datetime import date
 import random
 import time
+import json
 
 # Access environment variables
 s_id = os.getenv("SECRET_KEY")
@@ -27,6 +28,22 @@ scope = "user-library-read playlist-modify-private"
 # Set cache path for token storage
 cache_path = ".spotipyoauthcache"
 
+class FileCacheHandler(CacheHandler):
+    def __init__(self, cache_path):
+        self.cache_path = cache_path
+
+    def get_cached_token(self):
+        try:
+            with open(self.cache_path, 'r') as f:
+                token_info = json.load(f)
+                return token_info
+        except IOError:
+            return None
+
+    def save_token_to_cache(self, token_info):
+        with open(self.cache_path, 'w') as f:
+            json.dump(token_info, f)
+
 # Create FileCacheHandler instance
 cache_handler = FileCacheHandler(cache_path=cache_path)
 
@@ -36,9 +53,6 @@ auth_manager = SpotifyOAuth(client_id=c_id,
                             scope=scope,
                             cache_handler=cache_handler)
 
-sp = spotipy.Spotify(auth_manager=auth_manager)
-
-# Create a Spotipy instance with the auth manager
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
 # Set SpotiFire ID
