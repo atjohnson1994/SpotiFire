@@ -139,8 +139,11 @@ def authorize():
 # Endpoint to handle Spotify authorization callback
 @app.route('/callback')
 def callback():
+    print('1')
     sp_oauth = get_spotify_auth_manager()
+    print('2')
     code = request.args.get('code')
+    print('3')
     print(f'Authorization code: {code}')
     
     try:
