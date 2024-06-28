@@ -33,7 +33,19 @@ def get_spotify_auth_manager():
         cache_handler=CacheHandler(),
         scope=scope
     )
+# Custom Cache Handler for SpotifyOAuth
+class CustomCacheHandler(CacheHandler):
+    def __init__(self):
+        self.cache = {}
 
+    def get_cached_token(self):
+        return self.cache.get("token_info")
+
+    def save_token_to_cache(self, token_info):
+        self.cache["token_info"] = token_info
+
+    def delete_cached_token(self):
+        self.cache.pop("token_info", None)
 # # Get the authorization URL
 # auth_url = auth_manager.get_authorize_url()
 
@@ -361,16 +373,9 @@ def create_playlist():
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Initialize SpotifyOAuth with environment variables and cache handler
-        auth_manager = SpotifyOAuth(
-            client_id=c_id,
-            client_secret=s_id,
-            redirect_uri=redirect_uri,
-            cache_handler=CacheHandler(),
-            scope=scope
-        )
-
-        sp = spotipy.Spotify(auth_manager=auth_manager)
+        sp_oauth = get_spotify_auth_manager()
+        token_info = sp_oauth.get_cached_token()
+        sp = spotipy.Spotify(auth=token_info['access_token'])
 
         if user.playlist_uri:
             user_uri = user.playlist_uri
