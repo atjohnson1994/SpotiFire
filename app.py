@@ -389,6 +389,21 @@ def add_songs_to_playlist(all_songs, user_uri):
 
 # SpotiFire
 def playlist_creation(items, user):
+
+    # Access environment variables
+    s_id = os.getenv("SECRET_KEY")
+    c_id = os.getenv("API_KEY")
+    redirect_uri = "http://64.23.182.26:1410/"
+    scope = "user-library-read playlist-modify-private" 
+
+    # Use CacheHandler for caching
+    auth_manager = SpotifyOAuth(client_id=c_id, 
+                                client_secret=s_id, 
+                                redirect_uri=redirect_uri,
+                                cache_handler=CacheHandler(),
+                                scope=scope)
+
+    sp = spotipy.Spotify(auth_manager=auth_manager)
     all_songs = []
     holiday_key_words = ['christmas', 'santa']
 
