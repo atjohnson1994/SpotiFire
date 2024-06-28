@@ -16,6 +16,7 @@ from datetime import date
 import random
 import time
 import json
+from urllib.parse import urlencode
 
 
 # Access environment variables
@@ -100,9 +101,18 @@ def initialize_spotipy():
 # Endpoint for Spotify authorization flow
 @app.route('/authorize')
 def authorize():
-    sp_oauth = get_spotify_auth_manager()
-    auth_url = sp_oauth.get_authorize_url()
-    return redirect(auth_url)
+    # Construct Spotify authorization URL
+    spotify_authorize_url = 'https://accounts.spotify.com/authorize'
+    params = {
+        'client_id': 'b089443f5b9043f68eb7349713db606e',
+        'response_type': 'code',
+        'redirect_uri': 'http://64.23.182.26:1410/callback',
+        'scope': 'user-library-read playlist-modify-private'
+    }
+    spotify_auth_url = spotify_authorize_url + '?' + urlencode(params)
+    
+    # Redirect to Spotify authorization URL
+    return redirect(spotify_auth_url)
 
 # # Endpoint to handle Spotify authorization callback
 @app.route('/callback')
