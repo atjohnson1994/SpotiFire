@@ -655,7 +655,7 @@ const createPlaylist = async (event) => {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to create playlist yo');
+            // throw new Error('Failed to create playlist yo');
         }
 
         const data = await response.json();
