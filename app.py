@@ -15,6 +15,7 @@ import pandas as pd
 from datetime import date
 import random
 import time
+import json
 
 
 # Access environment variables
@@ -24,23 +25,32 @@ jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
 scope = "user-library-read playlist-modify-private" 
-# Custom Cache Handler for SpotifyOAuth
 class CustomCacheHandler(CacheHandler):
     def __init__(self):
-        self.cache = {}
-        print("CustomCacheHandler initialized")
+        super().__init__()
+        self.cache_path = '.spotipy_oauth_token.cache'  # Change this to your cache file path if needed
+        print(f'Initializing CustomCacheHandler with cache path: {self.cache_path}')
 
     def get_cached_token(self):
-        print("Getting cached token")
-        return self.cache.get("token_info")
+        try:
+            if os.path.exists(self.cache_path):
+                with open(self.cache_path, 'r') as f:
+                    token_info = json.load(f)
+                    print(f'Cached token retrieved: {token_info}')
+                    return token_info
+            print('No cached token found.')
+            return None
+        except Exception as e:
+            print(f'Error reading cache file: {e}')
+            return None
 
     def save_token_to_cache(self, token_info):
-        print("Saving token to cache")
-        self.cache["token_info"] = token_info
-
-    def delete_cached_token(self):
-        print("Deleting cached token")
-        self.cache.pop("token_info", None)
+        try:
+            with open(self.cache_path, 'w') as f:
+                json.dump(token_info, f)
+            print(f'Token saved to cache: {token_info}')
+        except Exception as e:
+            print(f'Error writing to cache file: {e}')
 
 # SpotifyOAuth initialization
 def get_spotify_auth_manager():
