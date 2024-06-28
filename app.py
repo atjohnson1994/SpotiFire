@@ -129,20 +129,32 @@ with app.app_context():
 
 ################################# Routes ####################################################
 # Endpoint for Spotify authorization flow
-@app.route('/spotify/login')
-def spotify_login():
-    auth_manager = get_spotify_auth_manager()
-    auth_url = auth_manager.get_authorize_url()
-    return jsonify({'auth_url': auth_url})
+@app.route('/authorize')
+def authorize():
+    sp_oauth = get_spotify_auth_manager()
+    auth_url = sp_oauth.get_authorize_url()
+    print(f'Auth URL: {auth_url}')
+    return redirect(auth_url)
 
 # Endpoint to handle Spotify authorization callback
-@app.route('/spotify/callback')
-def spotify_callback():
+@app.route('/callback')
+def callback():
+    sp_oauth = get_spotify_auth_manager()
     code = request.args.get('code')
-    auth_manager = get_spotify_auth_manager()
-    token_info = auth_manager.get_access_token(code)
-    # Optionally, save token_info in session or database for further use
-    return jsonify(token_info)
+    print(f'Authorization code: {code}')
+    
+    try:
+        token_info = sp_oauth.get_access_token(code)
+        print(f'Access token info: {token_info}')
+        
+        if token_info:
+            sp_oauth.cache_handler.save_token_to_cache(token_info)
+            return jsonify({'success': 'Token saved to cache'})
+        else:
+            return jsonify({'error': 'Failed to get token'}), 400
+    except Exception as e:
+        print(f'Error during token exchange: {e}')
+        return jsonify({'error': str(e)}), 500
 ### Login ###
 # User login route to authenticate and return a JWT token
 # Route for the login page (GET request)
