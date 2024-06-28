@@ -114,18 +114,18 @@ def initialize_spotipy():
 #     code = request.args.get('code')
 #     print(f'Authorization code: {code}')
     
-    try:
-        token_info = sp_oauth.get_access_token(code)
-        print(f'Access token info: {token_info}')
+    # try:
+    #     token_info = sp_oauth.get_access_token(code)
+    #     print(f'Access token info: {token_info}')
         
-        if token_info:
-            sp_oauth.cache_handler.save_token_to_cache(token_info)
-            return jsonify({'success': 'Token saved to cache'})
-        else:
-            return jsonify({'error': 'Failed to get token'}), 400
-    except Exception as e:
-        print(f'Error during token exchange: {e}')
-        return jsonify({'error': str(e)}), 500
+    #     if token_info:
+    #         sp_oauth.cache_handler.save_token_to_cache(token_info)
+    #         return jsonify({'success': 'Token saved to cache'})
+    #     else:
+    #         return jsonify({'error': 'Failed to get token'}), 400
+    # except Exception as e:
+    #     print(f'Error during token exchange: {e}')
+    #     return jsonify({'error': str(e)}), 500
 ### Login ###
 # User login route to authenticate and return a JWT token
 # Route for the login page (GET request)
@@ -371,9 +371,9 @@ def create_playlist():
 
         if not user:
             return jsonify({'error': 'User not found'}), 404
-
+        print('1')
         sp = initialize_spotipy()
-
+        print('2')
         if user.playlist_uri:
             user_uri = user.playlist_uri
             playlist_url = user.playlist_url
