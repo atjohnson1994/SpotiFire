@@ -45,7 +45,7 @@ sleep_rate=5
 # Initialize app
 app = Flask(__name__)
 # CORS(app)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "http://64.23.182.26:5000"}}, supports_credentials=True)
 
 # Configure your JWT
 app.config['JWT_SECRET_KEY'] = jwt_key
