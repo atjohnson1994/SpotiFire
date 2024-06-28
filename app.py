@@ -94,7 +94,7 @@ with app.app_context():
 
 # Initialize Spotipy with Client Credentials Flow
 def initialize_spotipy():
-    return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=c_id, client_secret=s_id, scope=scope, redirect=redirect_uri))
+    return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=c_id, client_secret=s_id, scope=scope))
 
 
 ################################# Routes ####################################################
