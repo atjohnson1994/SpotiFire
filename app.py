@@ -366,6 +366,7 @@ def delete_item(item_name):
 @app.route('/create', methods=['GET'])
 @jwt_required()
 def create_playlist():
+    print('hello')
     try:
         user_id = get_jwt_identity()
         user = User.query.filter_by(id=user_id).first()
