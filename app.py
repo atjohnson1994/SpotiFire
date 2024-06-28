@@ -23,8 +23,15 @@ my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
 scope = "user-library-read playlist-modify-private" 
 
-# Initialize Spotipy with OAuth configuration
-auth_manager = SpotifyOAuth(client_id=c_id, client_secret=s_id, redirect_uri=redirect_uri, scope=scope)
+# Set cache path for token storage
+cache_path = ".spotipyoauthcache"
+
+auth_manager = SpotifyOAuth(client_id=c_id, 
+                            client_secret=s_id, 
+                            redirect_uri=redirect_uri, 
+                            scope=scope,
+                            cache_handler=True,
+                            cache_path=cache_path)
 
 # Create a Spotipy instance with the auth manager
 sp = spotipy.Spotify(auth_manager=auth_manager)
