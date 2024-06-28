@@ -33,19 +33,7 @@ def get_spotify_auth_manager():
         cache_handler=CacheHandler(),
         scope=scope
     )
-# Custom Cache Handler for SpotifyOAuth
-class CustomCacheHandler(CacheHandler):
-    def __init__(self):
-        self.cache = {}
 
-    def get_cached_token(self):
-        return self.cache.get("token_info")
-
-    def save_token_to_cache(self, token_info):
-        self.cache["token_info"] = token_info
-
-    def delete_cached_token(self):
-        self.cache.pop("token_info", None)
 # # Get the authorization URL
 # auth_url = auth_manager.get_authorize_url()
 
