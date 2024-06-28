@@ -23,7 +23,13 @@ jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
 scope = "user-library-read playlist-modify-private" 
+sp_oauth = SpotifyOAuth(client_id=c_id, client_secret=s_id, redirect_uri=redirect_uri, scope=scope)
+auth_url = sp_oauth.get_authorize_url()
+# After redirect, get the authorization code from the query parameters
+code = 'authorization_code_from_redirect'
 
+# Exchange the authorization code for an access token
+token_info = sp_oauth.get_access_token(code)
 # Use CacheHandler for caching
 auth_manager = SpotifyOAuth(client_id=c_id, 
                             client_secret=s_id, 
@@ -379,6 +385,11 @@ def create_playlist():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'No items found for this user'}), 404
+
+@app.route('/splogin')
+def login():
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
 
 ######################################## Functions #############################################
 # Add songs to spotify playlist
