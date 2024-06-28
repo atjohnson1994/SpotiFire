@@ -329,39 +329,35 @@ def delete_item(item_name):
 def create_playlist():
     user_id = get_jwt_identity()
     user = User.query.filter_by(id=user_id).first()
-    sp = spotipy.Spotify(auth_manager=auth_manager)
 
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-
-    try:
-        # Check if the user already has a playlist URI
-        if user.playlist_uri:
-            playlist_url = user.playlist_url
-        else:
-            # If user does not have a playlist URI, create a new playlist
-            username = user.username
-            playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist",
-                                               public=False, collaborative=False, description='')
-            playlist_id = playlist['id']
-            sp.playlist_change_details(playlist_id, collaborative=True)
-            user.playlist_uri = playlist['uri']
-            user.playlist_url = playlist['external_urls']['spotify']
-            db.session.commit()
-
-            playlist_url = user.playlist_url
-        
-        # Get items associated with the user
-        items = Item.query.filter_by(user_id=user_id, selected=True).all()
-
-        if items:
-            playlist_creation(items, user)  # Call your function to populate the playlist
-            return jsonify({'playlist_url': playlist_url}), 200
-        else:
-            return jsonify({'error': 'No items found for this user'}), 404
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    if not user: # If no user found
+        return jsonify({'error': 'User not found'}), 404 # Return error
+    
+    username = user.username
+    if user.playlist_uri: # If user already has a playlist URI associated with account
+        user_uri = user.playlist_uri # Extract playlist URI
+        playlist_url = user.playlist_url # Extract playlist URL
+    else: # If user has no playlist URI
+        try:
+            playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist", public=False, collaborative=False, description='') # Create new playlist
+            playlist_id = playlist['id'] # Extract playlist ID
+            sp.playlist_change_details(playlist_id, collaborative=True) # Set playlist to collaborative
+            user_uri = playlist['uri'] # Extract playlist URI
+            playlist_url = playlist['external_urls']['spotify'] # Extract playlist URL
+            user.playlist_uri = user_uri # Store playlist URI in user's account
+            user.playlist_url = playlist_url # Store playlist URL in user's account
+            db.session.commit() # Commit changes to database
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    items = Item.query.filter_by(user_id=user_id, selected=True).all()
+    if items:
+        try:
+            playlist_creation(items, user) # SpotiFire function
+            return jsonify(playlist_url)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'No items found for this user'}), 404
 
 ######################################## Functions #############################################
 # Add songs to spotify playlist
@@ -452,4 +448,4 @@ def playlist_creation(items, user):
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=True)
