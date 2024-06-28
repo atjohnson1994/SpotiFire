@@ -24,16 +24,34 @@ jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
 scope = "user-library-read playlist-modify-private" 
+# Custom Cache Handler for SpotifyOAuth
+class CustomCacheHandler(CacheHandler):
+    def __init__(self):
+        self.cache = {}
+        print("CustomCacheHandler initialized")
+
+    def get_cached_token(self):
+        print("Getting cached token")
+        return self.cache.get("token_info")
+
+    def save_token_to_cache(self, token_info):
+        print("Saving token to cache")
+        self.cache["token_info"] = token_info
+
+    def delete_cached_token(self):
+        print("Deleting cached token")
+        self.cache.pop("token_info", None)
+
 # SpotifyOAuth initialization
 def get_spotify_auth_manager():
+    print("Initializing SpotifyOAuth")
     return SpotifyOAuth(
         client_id=c_id,
         client_secret=s_id,
         redirect_uri=redirect_uri,
-        cache_handler=CacheHandler(),
+        cache_handler=CustomCacheHandler(),
         scope=scope
     )
-
 # # Get the authorization URL
 # auth_url = auth_manager.get_authorize_url()
 
