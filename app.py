@@ -10,12 +10,11 @@ import os
 # Import Spotify dependencies
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from spotipy.cache_handler import FileCacheHandler
+from spotipy.cache_handler import CacheHandler
 import pandas as pd
 from datetime import date
 import random
 import time
-import json
 
 # Access environment variables
 s_id = os.getenv("SECRET_KEY")
@@ -25,33 +24,11 @@ my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
 scope = "user-library-read playlist-modify-private" 
 
-# Set cache path for token storage
-cache_path = ".spotipyoauthcache"
-
-class FileCacheHandler(CacheHandler):
-    def __init__(self, cache_path):
-        self.cache_path = cache_path
-
-    def get_cached_token(self):
-        try:
-            with open(self.cache_path, 'r') as f:
-                token_info = json.load(f)
-                return token_info
-        except IOError:
-            return None
-
-    def save_token_to_cache(self, token_info):
-        with open(self.cache_path, 'w') as f:
-            json.dump(token_info, f)
-
-# Create FileCacheHandler instance
-cache_handler = FileCacheHandler(cache_path=cache_path)
-
+# Use CacheHandler for caching
 auth_manager = SpotifyOAuth(client_id=c_id, 
                             client_secret=s_id, 
-                            redirect_uri=redirect_uri, 
-                            scope=scope,
-                            cache_handler=cache_handler)
+                            redirect_uri=redirect_uri,
+                            cache_handler=CacheHandler())
 
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
