@@ -366,7 +366,6 @@ def delete_item(item_name):
 @app.route('/create', methods=['GET'])
 @jwt_required()
 def create_playlist():
-    print('hello')
     try:
         user_id = get_jwt_identity()
         user = User.query.filter_by(id=user_id).first()
@@ -377,13 +376,13 @@ def create_playlist():
         sp_oauth = get_spotify_auth_manager()
         token_info = sp_oauth.get_cached_token()
         sp = spotipy.Spotify(auth=token_info['access_token'])
+        print(sp_oauth)
 
         if user.playlist_uri:
             user_uri = user.playlist_uri
             playlist_url = user.playlist_url
         else:
             # Create a new playlist if user does not have one
-            print("hi")
             playlist = sp.user_playlist_create(user=me, name=f"{user.username}'s Playlist", public=False, collaborative=False, description='')
             playlist_id = playlist['id']
             sp.playlist_change_details(playlist_id, collaborative=True)
