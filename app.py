@@ -28,15 +28,13 @@ scope = "user-library-read playlist-modify-private"
 
 
 
-# # Get the authorization URL
-# auth_url = auth_manager.get_authorize_url()
-
-
-# # Exchange the authorization code for an access token
-# token_info = auth_manager.get_access_token(code)
-
-# # Use the auth_manager with Spotipy to make API requests
-# sp = spotipy.Spotify(auth_manager=auth_manager)
+def get_spotify_auth_manager():
+    return SpotifyOAuth(
+        client_id=c_id,
+        client_secret=s_id,
+        redirect_uri=redirect_uri,
+        scope=scope
+    )
 
 # Set SpotiFire ID
 me = my_id
@@ -100,32 +98,29 @@ def initialize_spotipy():
 
 ################################# Routes ####################################################
 # Endpoint for Spotify authorization flow
-# @app.route('/authorize')
-# def authorize():
-#     sp_oauth = get_spotify_auth_manager()
-#     auth_url = sp_oauth.get_authorize_url()
-#     print(f'Auth URL: {auth_url}')
-#     return redirect(auth_url)
+@app.route('/authorize')
+def authorize():
+    sp_oauth = get_spotify_auth_manager()
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
 
 # # Endpoint to handle Spotify authorization callback
-# @app.route('/callback')
-# def callback():
-#     sp_oauth = get_spotify_auth_manager()
-#     code = request.args.get('code')
-#     print(f'Authorization code: {code}')
-    
-    # try:
-    #     token_info = sp_oauth.get_access_token(code)
-    #     print(f'Access token info: {token_info}')
-        
-    #     if token_info:
-    #         sp_oauth.cache_handler.save_token_to_cache(token_info)
-    #         return jsonify({'success': 'Token saved to cache'})
-    #     else:
-    #         return jsonify({'error': 'Failed to get token'}), 400
-    # except Exception as e:
-    #     print(f'Error during token exchange: {e}')
-    #     return jsonify({'error': str(e)}), 500
+@app.route('/callback')
+def callback():
+    sp_oauth = get_spotify_auth_manager()
+    code = request.args.get('code')
+
+    try:
+        token_info = sp_oauth.get_access_token(code)
+        # Optionally save token_info to cache or database securely
+        if token_info:
+            sp_oauth.cache_handler.save_token_to_cache(token_info)
+            return jsonify({'success': 'Token saved to cache'}), 200
+        else:
+            return jsonify({'error': 'Failed to get token'}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 ### Login ###
 # User login route to authenticate and return a JWT token
 # Route for the login page (GET request)
@@ -372,14 +367,21 @@ def create_playlist():
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        sp = initialize_spotipy()
+        sp_oauth = get_spotify_auth_manager()
+        token_info = sp_oauth.get_cached_token()
+        if not token_info:
+            return redirect('/authorize')  # Redirect to authorization if no token
+        access_token = token_info['access_token']
+        sp = spotipy.Spotify(auth=access_token)
+         # Now you can perform actions with `sp` object like creating playlists
+        user_id = sp.me()['id']
 
         if user.playlist_uri:
             user_uri = user.playlist_uri
             playlist_url = user.playlist_url
         else:
             # Create a new playlist if user does not have one
-            playlist = sp.user_playlist_create(user=me, name=f"{user.username}'s Playlist", public=False, collaborative=False, description='')
+            playlist = sp.user_playlist_create(user=user_id, name=f"{user.username}'s Playlist", public=False, collaborative=False, description='')
             playlist_id = playlist['id']
             sp.playlist_change_details(playlist_id, collaborative=True)
             user_uri = playlist['uri']
