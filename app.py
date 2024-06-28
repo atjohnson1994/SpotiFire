@@ -349,9 +349,11 @@ def create_playlist():
         return jsonify({'error': 'User not found'}), 404 # Return error
     
     username = user.username
+    print("aweihgi")
     if user.playlist_uri: # If user already has a playlist URI associated with account
         user_uri = user.playlist_uri # Extract playlist URI
         playlist_url = user.playlist_url # Extract playlist URL
+        print("l")
     else: # If user has no playlist URI
         try:
             print("h")
