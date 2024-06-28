@@ -16,16 +16,7 @@ from datetime import date
 import random
 import time
 
-# Example of a basic cache handler implementation
-class CacheHandler:
-    def __init__(self):
-        self.cached_token = None
 
-    def get_cached_token(self):
-        return self.cached_token
-
-    def save_token(self, token_info):
-        self.cached_token = token_info['access_token']  # Save only the access token
 # Access environment variables
 s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
