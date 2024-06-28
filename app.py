@@ -24,7 +24,7 @@ s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
 jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
-redirect_uri = "http://64.23.182.26:1410/callback"
+redirect_uri = "http://64.23.182.26:1410"
 scope = "user-library-read playlist-modify-private" 
 
 
@@ -94,7 +94,7 @@ with app.app_context():
 
 # Initialize Spotipy with Client Credentials Flow
 def initialize_spotipy():
-    return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=c_id, client_secret=s_id))
+    return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=c_id, client_secret=s_id, scope=scope, redirect=redirect_uri))
 
 
 ################################# Routes ####################################################
