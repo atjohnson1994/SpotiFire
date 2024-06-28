@@ -16,18 +16,29 @@ from datetime import date
 import random
 import time
 
-# Load environment variables
+# Example of a basic cache handler implementation
+class CacheHandler:
+    def __init__(self):
+        self.cached_token = None
+
+    def get_cached_token(self):
+        return self.cached_token
+
+    def save_token(self, token_info):
+        self.cached_token = token_info['access_token']  # Save only the access token
+# Access environment variables
 s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
+jwt_key = os.getenv("JWT_KEY")
+my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
-scope = "user-library-read playlist-modify-private"
-
-# Initialize SpotifyOAuth with cache handler
+scope = "user-library-read playlist-modify-private" 
+# Initialize SpotifyOAuth with custom cache handler
 auth_manager = SpotifyOAuth(
     client_id=c_id,
     client_secret=s_id,
     redirect_uri=redirect_uri,
-    cache_handler=CacheHandler(),  # Replace with your custom cache handler if applicable
+    cache_handler=CacheHandler(),
     scope=scope
 )
 
@@ -42,7 +53,6 @@ token_info = auth_manager.get_access_token(code)
 
 # Use the auth_manager with Spotipy to make API requests
 sp = spotipy.Spotify(auth_manager=auth_manager)
-
 
 # Set SpotiFire ID
 me = my_id
