@@ -9,7 +9,7 @@ from flask_migrate import Migrate
 import os
 # Import Spotify dependencies
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
 from spotipy.cache_handler import CacheHandler
 import pandas as pd
 from datetime import date
@@ -25,43 +25,9 @@ jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/callback"
 scope = "user-library-read playlist-modify-private" 
-class CustomCacheHandler(CacheHandler):
-    def __init__(self):
-        super().__init__()
-        self.cache_path = '.spotipy_oauth_token.cache'  # Change this to your cache file path if needed
-        print(f'Initializing CustomCacheHandler with cache path: {self.cache_path}')
 
-    def get_cached_token(self):
-        try:
-            if os.path.exists(self.cache_path):
-                with open(self.cache_path, 'r') as f:
-                    token_info = json.load(f)
-                    print(f'Cached token retrieved: {token_info}')
-                    return token_info
-            print('No cached token found.')
-            return None
-        except Exception as e:
-            print(f'Error reading cache file: {e}')
-            return None
 
-    def save_token_to_cache(self, token_info):
-        try:
-            with open(self.cache_path, 'w') as f:
-                json.dump(token_info, f)
-            print(f'Token saved to cache: {token_info}')
-        except Exception as e:
-            print(f'Error writing to cache file: {e}')
 
-# SpotifyOAuth initialization
-def get_spotify_auth_manager():
-    print("Initializing SpotifyOAuth")
-    return SpotifyOAuth(
-        client_id=c_id,
-        client_secret=s_id,
-        redirect_uri=redirect_uri,
-        cache_handler=CustomCacheHandler(),
-        scope=scope
-    )
 # # Get the authorization URL
 # auth_url = auth_manager.get_authorize_url()
 
@@ -127,24 +93,26 @@ class Item(db.Model):
 with app.app_context():
     db.create_all()
 
+# Initialize Spotipy with Client Credentials Flow
+def initialize_spotipy():
+    return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=c_id, client_secret=s_id))
+
+
 ################################# Routes ####################################################
 # Endpoint for Spotify authorization flow
-@app.route('/authorize')
-def authorize():
-    sp_oauth = get_spotify_auth_manager()
-    auth_url = sp_oauth.get_authorize_url()
-    print(f'Auth URL: {auth_url}')
-    return redirect(auth_url)
+# @app.route('/authorize')
+# def authorize():
+#     sp_oauth = get_spotify_auth_manager()
+#     auth_url = sp_oauth.get_authorize_url()
+#     print(f'Auth URL: {auth_url}')
+#     return redirect(auth_url)
 
-# Endpoint to handle Spotify authorization callback
-@app.route('/callback')
-def callback():
-    print('1')
-    sp_oauth = get_spotify_auth_manager()
-    print('2')
-    code = request.args.get('code')
-    print('3')
-    print(f'Authorization code: {code}')
+# # Endpoint to handle Spotify authorization callback
+# @app.route('/callback')
+# def callback():
+#     sp_oauth = get_spotify_auth_manager()
+#     code = request.args.get('code')
+#     print(f'Authorization code: {code}')
     
     try:
         token_info = sp_oauth.get_access_token(code)
@@ -403,28 +371,8 @@ def create_playlist():
 
         if not user:
             return jsonify({'error': 'User not found'}), 404
-        print('1 - User found')
 
-        sp_oauth = get_spotify_auth_manager()
-        print('2 - SpotifyOAuth initialized')
-
-        token_info = sp_oauth.get_cached_token()
-        if token_info is None:
-            print('3 - No token found')
-            return jsonify({'error': 'No token found'}), 401
-
-        print(f'3 - Token found: {token_info}')
-        
-        access_token = token_info.get('access_token')
-        if not access_token:
-            print('3.1 - No access token in token info')
-            return jsonify({'error': 'Invalid token info'}), 401
-
-        print(f'3.2 - Access token: {access_token}')
-        
-        sp = spotipy.Spotify(auth=access_token)
-        print('4 - Spotify client initialized')
-        
+        sp = initialize_spotipy()
 
         if user.playlist_uri:
             user_uri = user.playlist_uri
