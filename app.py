@@ -1,6 +1,6 @@
 ############################# Set up ###########################################
 # Import Flask dependencies
-from flask import Flask, jsonify, request, render_template, redirect
+from flask import Flask, jsonify, request, render_template, redirect, url_for, session
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -17,19 +17,22 @@ import random
 import time
 import json
 from urllib.parse import urlencode
-
+import requests
+from datetime import datetime, timedelta
 
 # Access environment variables
 s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
 jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
-redirect_uri = "http://64.23.182.26:1410"
+redirect_uri = "http://64.23.182.26:1410/callback"
 scope = "user-library-read playlist-modify-private" 
+redirect_code = "AQA81Yf0r3U-arbbm8po2U_15PhTEFbVPJf2E3kRe3Dxys6OXi9q3EQSe2VV5N4dSYALFvEw6can7XLB0K_Dst-nkZCBCG2H2XD5k4z7ZqPzsHapT5nMDe-ChCq0-K1UrNnaULQjBqJ35uoeL8UWcD9TV3EectlmRS4OxnlMTIonQkc4tmhJfExMSwJxPp06RZCHut4nxY-oCCo2e9hINhJYccyg9Mes2oL-GNE"
 
 
 
-def get_spotify_auth_manager():
+# Spotify OAuth2 Manager
+def get_spotify_oauth():
     return SpotifyOAuth(
         client_id=c_id,
         client_secret=s_id,
@@ -96,8 +99,40 @@ with app.app_context():
 def initialize_spotipy():
     return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=c_id, client_secret=s_id))
 
-
 ################################# Routes ####################################################
+
+# Auth route
+@app.route('/authorize')
+def authorize():
+    sp_oauth = get_spotify_oauth()
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
+
+# Callback route
+@app.route('/callback')
+def callback():
+    sp_oauth = get_spotify_oauth()
+    session.clear()
+    code = request.args.get('code')
+    token_info = sp_oauth.get_access_token(code)
+    session['token_info'] = token_info
+    return redirect(url_for('create_playlist'))
+
+# Token management
+def get_token():
+    token_info = session.get('token_info', {})
+    sp_oauth = get_spotify_oauth()
+
+    if not token_info:
+        raise "exception"
+
+    now = int(datetime.now().timestamp())
+    is_expired = token_info['expires_at'] - now < 60
+
+    if is_expired:
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+
+    return token_info
 # # Endpoint for Spotify authorization flow
 # @app.route('/authorize')
 # def authorize():
@@ -377,9 +412,9 @@ def create_playlist():
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        sp = initialize_spotipy()
-        playlist = sp.user_playlist_create(user=me, name=f"{user.username}'s Playlist", public=False, collaborative=False, description='')
-
+        token_info = get_token()
+        sp = initialize_spotipy(token_info)
+        
         if user.playlist_uri:
             user_uri = user.playlist_uri
             playlist_url = user.playlist_url
