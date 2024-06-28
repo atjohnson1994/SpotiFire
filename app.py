@@ -371,8 +371,8 @@ def create_playlist():
         token_info = sp_oauth.get_cached_token()
         if not token_info:
             return redirect('/authorize')  # Redirect to authorization if no token
-        access_token = token_info['access_token']
-        sp = spotipy.Spotify(auth=access_token)
+        sp_access_token = token_info['access_token']
+        sp = spotipy.Spotify(auth=sp_access_token)
          # Now you can perform actions with `sp` object like creating playlists
         user_id = sp.me()['id']
 
