@@ -372,11 +372,13 @@ def create_playlist():
 
         if not user:
             return jsonify({'error': 'User not found'}), 404
-
+        print('1')
         sp_oauth = get_spotify_auth_manager()
+        print('2')
         token_info = sp_oauth.get_cached_token()
+        print('3')
         sp = spotipy.Spotify(auth=token_info['access_token'])
-        print('hello')
+        
 
         if user.playlist_uri:
             user_uri = user.playlist_uri
