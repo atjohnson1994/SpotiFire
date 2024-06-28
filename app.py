@@ -361,7 +361,7 @@ def delete_item(item_name):
         return jsonify({'message': 'Failed to delete item', 'error': str(e)}), 500
 
 ### Create Playlist ###
-# Route to create a new playlist
+# Create playlist route
 @app.route('/create', methods=['GET'])
 @jwt_required()
 def create_playlist():
@@ -371,9 +371,9 @@ def create_playlist():
 
         if not user:
             return jsonify({'error': 'User not found'}), 404
-        print('1')
+
         sp = initialize_spotipy()
-        print('2')
+
         if user.playlist_uri:
             user_uri = user.playlist_uri
             playlist_url = user.playlist_url
@@ -387,6 +387,9 @@ def create_playlist():
             user.playlist_uri = user_uri
             user.playlist_url = playlist_url
             db.session.commit()
+
+            # Log playlist creation details
+            print(f"Playlist created: ID - {playlist_id}, URL - {playlist_url}")
 
         # Fetch items for playlist creation
         items = Item.query.filter_by(user_id=user_id, selected=True).all()
