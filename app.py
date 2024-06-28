@@ -333,8 +333,11 @@ def create_playlist():
     # Access environment variables
     s_id = os.getenv("SECRET_KEY")
     c_id = os.getenv("API_KEY")
+    my_id = os.getenv("MY_ID")
     redirect_uri = "http://64.23.182.26:1410/"
     scope = "user-library-read playlist-modify-private" 
+    # Set SpotiFire ID
+    me = my_id
 
     # Use CacheHandler for caching
     auth_manager = SpotifyOAuth(client_id=c_id, 
@@ -349,14 +352,13 @@ def create_playlist():
         return jsonify({'error': 'User not found'}), 404 # Return error
     
     username = user.username
-    print("aweihgi")
+    print(username)
     if user.playlist_uri: # If user already has a playlist URI associated with account
         user_uri = user.playlist_uri # Extract playlist URI
         playlist_url = user.playlist_url # Extract playlist URL
-        print("l")
     else: # If user has no playlist URI
         try:
-            print("h")
+            print(me)
             playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist", public=False, collaborative=False, description='') # Create new playlist
             print("hi")
             playlist_id = playlist['id'] # Extract playlist ID
