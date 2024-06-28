@@ -24,6 +24,16 @@ my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
 scope = "user-library-read playlist-modify-private" 
 
+# Replace these with your actual environment variable names
+variables_to_check = ["SECRET_KEY", "API_KEY", "JWT_KEY", "MY_ID"]
+
+for var_name in variables_to_check:
+    var_value = os.getenv(var_name)
+    if var_value is None:
+        print(f"Environment variable {var_name} is not set.")
+    else:
+        print(f"Environment variable {var_name} has value: {var_value}")
+
 # Use CacheHandler for caching
 auth_manager = SpotifyOAuth(client_id=c_id, 
                             client_secret=s_id, 
