@@ -23,7 +23,7 @@ s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
 jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
-redirect_uri = "http://64.23.182.26:1410/"
+redirect_uri = "http://64.23.182.26:1410/callback"
 scope = "user-library-read playlist-modify-private" 
 class CustomCacheHandler(CacheHandler):
     def __init__(self):
