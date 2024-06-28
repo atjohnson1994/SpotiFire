@@ -116,7 +116,7 @@ def callback():
     code = request.args.get('code')
     token_info = sp_oauth.get_access_token(code)
     session['token_info'] = token_info
-    return redirect("/create")
+    return redirect(url_for('create_playlist'))
 
 # Token management
 def get_token():
