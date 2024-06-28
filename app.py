@@ -376,7 +376,7 @@ def create_playlist():
         sp_oauth = get_spotify_auth_manager()
         token_info = sp_oauth.get_cached_token()
         sp = spotipy.Spotify(auth=token_info['access_token'])
-        print(sp_oauth)
+        print('hello')
 
         if user.playlist_uri:
             user_uri = user.playlist_uri
