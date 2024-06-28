@@ -382,6 +382,7 @@ def create_playlist():
             playlist_url = user.playlist_url
         else:
             # Create a new playlist if user does not have one
+            print("hi")
             playlist = sp.user_playlist_create(user=me, name=f"{user.username}'s Playlist", public=False, collaborative=False, description='')
             playlist_id = playlist['id']
             sp.playlist_change_details(playlist_id, collaborative=True)
