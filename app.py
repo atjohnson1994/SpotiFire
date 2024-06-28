@@ -10,7 +10,7 @@ import os
 # Import Spotify dependencies
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth, SpotifyClientCredentials
-from spotipy.cache_handler import CacheHandler
+from spotipy.cache_handler import FlaskSessionCacheHandler
 import pandas as pd
 from datetime import date
 import random
@@ -98,39 +98,39 @@ def initialize_spotipy():
 
 
 ################################# Routes ####################################################
-# Endpoint for Spotify authorization flow
-@app.route('/authorize')
-def authorize():
-    # Construct Spotify authorization URL
-    spotify_authorize_url = 'https://accounts.spotify.com/authorize'
-    params = {
-        'client_id': 'b089443f5b9043f68eb7349713db606e',
-        'response_type': 'code',
-        'redirect_uri': 'http://64.23.182.26:1410/callback',
-        'scope': 'user-library-read playlist-modify-private'
-    }
-    spotify_auth_url = spotify_authorize_url + '?' + urlencode(params)
+# # Endpoint for Spotify authorization flow
+# @app.route('/authorize')
+# def authorize():
+#     # Construct Spotify authorization URL
+#     spotify_authorize_url = 'https://accounts.spotify.com/authorize'
+#     params = {
+#         'client_id': 'b089443f5b9043f68eb7349713db606e',
+#         'response_type': 'code',
+#         'redirect_uri': 'http://64.23.182.26:1410/callback',
+#         'scope': 'user-library-read playlist-modify-private'
+#     }
+#     spotify_auth_url = spotify_authorize_url + '?' + urlencode(params)
     
-    # Redirect to Spotify authorization URL
-    return redirect(spotify_auth_url)
+#     # Redirect to Spotify authorization URL
+#     return redirect(spotify_auth_url)
 
 # # Endpoint to handle Spotify authorization callback
-@app.route('/callback')
-def callback():
-    sp_oauth = get_spotify_auth_manager()
-    code = request.args.get('code')
+# @app.route('/callback')
+# def callback():
+#     sp_oauth = get_spotify_auth_manager()
+#     code = request.args.get('code')
 
-    try:
-        token_info = sp_oauth.get_access_token(code)
-        # Optionally save token_info to cache or database securely
-        if token_info:
-            sp_oauth.cache_handler.save_token_to_cache(token_info)
-            return jsonify({'success': 'Token saved to cache'}), 200
-        else:
-            return jsonify({'error': 'Failed to get token'}), 400
+#     try:
+#         token_info = sp_oauth.get_access_token(code)
+#         # Optionally save token_info to cache or database securely
+#         if token_info:
+#             sp_oauth.cache_handler.save_token_to_cache(token_info)
+#             return jsonify({'success': 'Token saved to cache'}), 200
+#         else:
+#             return jsonify({'error': 'Failed to get token'}), 400
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
 ### Login ###
 # User login route to authenticate and return a JWT token
 # Route for the login page (GET request)
@@ -377,14 +377,9 @@ def create_playlist():
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        sp_oauth = get_spotify_auth_manager()
-        token_info = sp_oauth.get_cached_token()
-        if not token_info:
-            return redirect('/authorize')  # Redirect to authorization if no token
-        sp_access_token = token_info['access_token']
-        sp = spotipy.Spotify(auth=sp_access_token)
-         # Now you can perform actions with `sp` object like creating playlists
-        user_id = sp.me()['id']
+        sp = initialize_spotipy()
+        playlists = sp.user_playlists(me)
+        print(playlists)
 
         if user.playlist_uri:
             user_uri = user.playlist_uri
