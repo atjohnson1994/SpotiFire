@@ -329,6 +329,7 @@ def delete_item(item_name):
 def create_playlist():
     user_id = get_jwt_identity()
     user = User.query.filter_by(id=user_id).first()
+    sp = spotipy.Spotify(auth_manager=auth_manager)
 
     if not user:
         return jsonify({'error': 'User not found'}), 404
