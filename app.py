@@ -25,7 +25,7 @@ my_id = os.getenv("MY_ID")
 # from spotifire_id import *
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=c_id,
                                                client_secret=s_id,
-                                               redirect_uri="http://localhost:1410/",
+                                               redirect_uri="http://64.23.182.26:1410/",
                                                scope=("user-library-read", "playlist-modify-private")))
 # Set SpotiFire ID
 me = my_id
