@@ -28,7 +28,8 @@ scope = "user-library-read playlist-modify-private"
 auth_manager = SpotifyOAuth(client_id=c_id, 
                             client_secret=s_id, 
                             redirect_uri=redirect_uri,
-                            cache_handler=CacheHandler())
+                            cache_handler=CacheHandler(),
+                            scope=scope)
 
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
@@ -329,6 +330,20 @@ def delete_item(item_name):
 def create_playlist():
     user_id = get_jwt_identity()
     user = User.query.filter_by(id=user_id).first()
+    # Access environment variables
+    s_id = os.getenv("SECRET_KEY")
+    c_id = os.getenv("API_KEY")
+    redirect_uri = "http://64.23.182.26:1410/"
+    scope = "user-library-read playlist-modify-private" 
+
+    # Use CacheHandler for caching
+    auth_manager = SpotifyOAuth(client_id=c_id, 
+                                client_secret=s_id, 
+                                redirect_uri=redirect_uri,
+                                cache_handler=CacheHandler(),
+                                scope=scope)
+
+    sp = spotipy.Spotify(auth_manager=auth_manager)
 
     if not user: # If no user found
         return jsonify({'error': 'User not found'}), 404 # Return error
