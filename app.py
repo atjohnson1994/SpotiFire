@@ -24,26 +24,25 @@ jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
 scope = "user-library-read playlist-modify-private" 
-# Initialize SpotifyOAuth with custom cache handler
-auth_manager = SpotifyOAuth(
-    client_id=c_id,
-    client_secret=s_id,
-    redirect_uri=redirect_uri,
-    cache_handler=CacheHandler(),
-    scope=scope
-)
+# SpotifyOAuth initialization
+def get_spotify_auth_manager():
+    return SpotifyOAuth(
+        client_id=c_id,
+        client_secret=s_id,
+        redirect_uri=redirect_uri,
+        cache_handler=CacheHandler(),
+        scope=scope
+    )
 
-# Get the authorization URL
-auth_url = auth_manager.get_authorize_url()
+# # Get the authorization URL
+# auth_url = auth_manager.get_authorize_url()
 
-# After redirect, obtain the authorization code from the query parameters
-code = 'authorization_code_from_redirect'  # Replace with actual code obtained from redirect URI
 
-# Exchange the authorization code for an access token
-token_info = auth_manager.get_access_token(code)
+# # Exchange the authorization code for an access token
+# token_info = auth_manager.get_access_token(code)
 
-# Use the auth_manager with Spotipy to make API requests
-sp = spotipy.Spotify(auth_manager=auth_manager)
+# # Use the auth_manager with Spotipy to make API requests
+# sp = spotipy.Spotify(auth_manager=auth_manager)
 
 # Set SpotiFire ID
 me = my_id
@@ -101,6 +100,21 @@ with app.app_context():
     db.create_all()
 
 ################################# Routes ####################################################
+# Endpoint for Spotify authorization flow
+@app.route('/spotify/login')
+def spotify_login():
+    auth_manager = get_spotify_auth_manager()
+    auth_url = auth_manager.get_authorize_url()
+    return jsonify({'auth_url': auth_url})
+
+# Endpoint to handle Spotify authorization callback
+@app.route('/spotify/callback')
+def spotify_callback():
+    code = request.args.get('code')
+    auth_manager = get_spotify_auth_manager()
+    token_info = auth_manager.get_access_token(code)
+    # Optionally, save token_info in session or database for further use
+    return jsonify(token_info)
 ### Login ###
 # User login route to authenticate and return a JWT token
 # Route for the login page (GET request)
@@ -340,57 +354,50 @@ def delete_item(item_name):
 @app.route('/create', methods=['GET'])
 @jwt_required()
 def create_playlist():
-    user_id = get_jwt_identity()
-    user = User.query.filter_by(id=user_id).first()
-    # Access environment variables
-    s_id = os.getenv("SECRET_KEY")
-    c_id = os.getenv("API_KEY")
-    my_id = os.getenv("MY_ID")
-    redirect_uri = "http://64.23.182.26:1410/"
-    scope = "user-library-read playlist-modify-private" 
-    # Set SpotiFire ID
-    me = my_id
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.filter_by(id=user_id).first()
 
-    # Use CacheHandler for caching
-    auth_manager = SpotifyOAuth(client_id=c_id, 
-                                client_secret=s_id, 
-                                redirect_uri=redirect_uri,
-                                cache_handler=CacheHandler(),
-                                scope=scope)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
 
-    sp = spotipy.Spotify(auth_manager=auth_manager)
+        # Initialize SpotifyOAuth with environment variables and cache handler
+        auth_manager = SpotifyOAuth(
+            client_id=c_id,
+            client_secret=s_id,
+            redirect_uri=redirect_uri,
+            cache_handler=CacheHandler(),
+            scope=scope
+        )
 
-    if not user: # If no user found
-        return jsonify({'error': 'User not found'}), 404 # Return error
-    
-    username = user.username
-    print(username)
-    if user.playlist_uri: # If user already has a playlist URI associated with account
-        user_uri = user.playlist_uri # Extract playlist URI
-        playlist_url = user.playlist_url # Extract playlist URL
-    else: # If user has no playlist URI
-        try:
-            print(me)
-            playlist = sp.user_playlist_create(user=me, name=f"{username}'s Playlist", public=False, collaborative=False, description='') # Create new playlist
-            print("hi")
-            playlist_id = playlist['id'] # Extract playlist ID
-            sp.playlist_change_details(playlist_id, collaborative=True) # Set playlist to collaborative
-            user_uri = playlist['uri'] # Extract playlist URI
-            playlist_url = playlist['external_urls']['spotify'] # Extract playlist URL
-            user.playlist_uri = user_uri # Store playlist URI in user's account
-            user.playlist_url = playlist_url # Store playlist URL in user's account
-            db.session.commit() # Commit changes to database
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    items = Item.query.filter_by(user_id=user_id, selected=True).all()
-    if items:
-        try:
-            playlist_creation(items, user) # SpotiFire function
-            return jsonify(playlist_url)
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    else:
-        return jsonify({'error': 'No items found for this user'}), 404
+        sp = spotipy.Spotify(auth_manager=auth_manager)
+
+        if user.playlist_uri:
+            user_uri = user.playlist_uri
+            playlist_url = user.playlist_url
+        else:
+            # Create a new playlist if user does not have one
+            playlist = sp.user_playlist_create(user=me, name=f"{user.username}'s Playlist", public=False, collaborative=False, description='')
+            playlist_id = playlist['id']
+            sp.playlist_change_details(playlist_id, collaborative=True)
+            user_uri = playlist['uri']
+            playlist_url = playlist['external_urls']['spotify']
+            user.playlist_uri = user_uri
+            user.playlist_url = playlist_url
+            db.session.commit()
+
+        # Fetch items for playlist creation
+        items = Item.query.filter_by(user_id=user_id, selected=True).all()
+
+        if items:
+            # Call your playlist creation function
+            playlist_creation(items, user, sp)
+            return jsonify({'playlist_url': playlist_url}), 200
+        else:
+            return jsonify({'error': 'No items found for this user'}), 404
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # @app.route('/splogin')
 # def login():
@@ -399,7 +406,7 @@ def create_playlist():
 
 ######################################## Functions #############################################
 # Add songs to spotify playlist
-def add_songs_to_playlist(all_songs, user_uri):
+def add_songs_to_playlist(all_songs, user_uri, sp):
     split_index = 0
     while split_index < len(all_songs):
         split = all_songs[split_index:split_index + 99]
@@ -411,78 +418,73 @@ def add_songs_to_playlist(all_songs, user_uri):
         split_index += 99
 
 # SpotiFire
-def playlist_creation(items, user):
-
-    
+def playlist_creation(items, user, sp):
     all_songs = []
     holiday_key_words = ['christmas', 'santa']
 
-    # Import settings and artists
     for i in range(len(items)):
-        item = items[i] # Listener
-        user_uri = user.playlist_uri # The user's playlist URI
-        allow_explicit = user.explicit # Explicit setting 
-        allow_holiday = user.holiday # Holiday setting
-        spl = user.songs_per_listener # Songs per listener
-        nra = user.number_of_related_artists # Number of related artists to be searched
-        rasc = user.related_artist_songs_count # Number of related artists songs to be added
-        songs = [] # Clear songs list
+        item = items[i]
+        user_uri = user.playlist_uri
+        allow_explicit = user.explicit
+        allow_holiday = user.holiday
+        spl = user.songs_per_listener
+        nra = user.number_of_related_artists
+        rasc = user.related_artist_songs_count
+        songs = []
         artists = [
             item.a1, item.a2, item.a3, item.a4, item.a5, 
             item.a6, item.a7, item.a8, item.a9, item.a10
-        ] # Extract artists from listener
-        artists_clean = pd.Series(artists).dropna().reset_index(drop=True) # Remove NA's
+        ]
+        artists_clean = pd.Series(artists).dropna().reset_index(drop=True)
 
-        # Search all artists and add songs to sample pool
-        for t in range(len(artists_clean)): # For each artist
-            artist_name = artists_clean[t] # Artist name
-            search_results = sp.search(q='artist:' + artist_name, type='artist', limit=1) # Search artist on spotify
-            if search_results['artists']['total'] == 0: # If search provides no results
-                print(f"No results for {artist_name}") # Log the error
-                continue # Next artist
-            print(f"Searching {artist_name}'s related artists") # Log
-            time.sleep(sleep_rate) # API request limiter
-            artist_uri = search_results['artists']['items'][0]['uri'] # Extract Artist URI
-            related_artist_search_results = sp.artist_related_artists(artist_uri) # Search related artists
-            related_artists = related_artist_search_results['artists'][:nra] # Extract related artists
-            samples = [] # Clear samples list
-            for related_artist in related_artists: # For each related artist
-                uri = related_artist['uri'] # Extract URI
-                top_tracks = sp.artist_top_tracks(uri, country='US') # Search related artist's top songs
+        for t in range(len(artists_clean)):
+            artist_name = artists_clean[t]
+            search_results = sp.search(q='artist:' + artist_name, type='artist', limit=1)
+            if search_results['artists']['total'] == 0:
+                print(f"No results for {artist_name}")
+                continue
+            print(f"Searching {artist_name}'s related artists")
+            time.sleep(sleep_rate)
+            artist_uri = search_results['artists']['items'][0]['uri']
+            related_artist_search_results = sp.artist_related_artists(artist_uri)
+            related_artists = related_artist_search_results['artists'][:nra]
+            samples = []
+            for related_artist in related_artists:
+                uri = related_artist['uri']
+                top_tracks = sp.artist_top_tracks(uri, country='US')
                 time.sleep(sleep_rate)
-                samples.extend(random.sample(top_tracks['tracks'], min(rasc, len(top_tracks['tracks'])))) # Add related song URI's to sample pool
-            artist_top_songs = sp.artist_top_tracks(artist_uri, country='US')['tracks'] # Search the main artist's top songs
-            samples.extend(artist_top_songs) # Add main artist song URI's to the sample pool
+                samples.extend(random.sample(top_tracks['tracks'], min(rasc, len(top_tracks['tracks']))))
+            artist_top_songs = sp.artist_top_tracks(artist_uri, country='US')['tracks']
+            samples.extend(artist_top_songs)
 
-            # Remove holiday and explicit songs depending on user settings
-            for track in samples: # For each song
-                if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words): # If allow_holiday=false, check song title for holiday words
-                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.") # Log that song is removed
-                    continue # Skip song
-                if not allow_explicit and track['explicit']: # allow_explicit=false, check song explicit rating
-                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.") # Log that song is removed
-                    continue # Skip song
-                print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.") # Log successful addition of song to sample pool
-                songs.append(track['uri']) # Add song uri to sample pool
+            for track in samples:
+                if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words):
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.")
+                    continue
+                if not allow_explicit and track['explicit']:
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.")
+                    continue
+                print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.")
+                songs.append(track['uri'])
 
-        if len(songs) < spl: # If sample pool is less than songs per listener value
-            if len(songs) > 2: # Verify the sample pool isn't empty
-                filler_artist = related_artists[0]['uri'] # Extract related artist URI
-                filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')['tracks'] # Search related artist top songs
-                filler_tracks = random.sample(filler_top_tracks, min(3, len(filler_top_tracks))) # Extract 3 songs from related artist
+        if len(songs) < spl:
+            if len(songs) > 2:
+                filler_artist = related_artists[0]['uri']
+                filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')['tracks']
+                filler_tracks = random.sample(filler_top_tracks, min(3, len(filler_top_tracks)))
                 for track in filler_tracks:
-                    if not allow_explicit and track['explicit']: # allow_explicit=false, check song explicit rating
+                    if not allow_explicit and track['explicit']:
                         print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.")
-                        continue # Skip song
-                    if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words): # If allow_holiday=false, check song title for holiday words
-                        print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.") # Log that song is removed
-                        continue # Skip song
-                    songs.append(track['uri']) # Add song URI to sample pool
-                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.") # Log successful addition of song to sample pool
-        else: # If sample pool is greater or equal to user spl
-            songs = random.sample(songs, spl) # Randomly select songs from sample pool equal to user spl
-        all_songs.extend(songs) # Add listeners selected song URI's to the playlist's URI
-    add_songs_to_playlist(all_songs, user_uri) # Call function to add songs to spotify playlist
+                        continue
+                    if not allow_holiday and any(keyword in track['name'].lower() for keyword in holiday_key_words):
+                        print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for Holiday status.")
+                        continue
+                    songs.append(track['uri'])
+                    print(f"Track '{track['name']}' by {track['artists'][0]['name']} added to sample pool.")
+        else:
+            songs = random.sample(songs, spl)
+        all_songs.extend(songs)
+    add_songs_to_playlist(all_songs, user_uri, sp)
   
 
 
