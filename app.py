@@ -16,28 +16,33 @@ from datetime import date
 import random
 import time
 
-# Access environment variables
+# Load environment variables
 s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
-jwt_key = os.getenv("JWT_KEY")
-my_id = os.getenv("MY_ID")
 redirect_uri = "http://64.23.182.26:1410/"
-scope = "user-library-read playlist-modify-private" 
-sp_oauth = SpotifyOAuth(client_id=c_id, client_secret=s_id, redirect_uri=redirect_uri, scope=scope)
-auth_url = sp_oauth.get_authorize_url()
-# After redirect, get the authorization code from the query parameters
-code = 'authorization_code_from_redirect'
+scope = "user-library-read playlist-modify-private"
+
+# Initialize SpotifyOAuth with cache handler
+auth_manager = SpotifyOAuth(
+    client_id=c_id,
+    client_secret=s_id,
+    redirect_uri=redirect_uri,
+    cache_handler=CacheHandler(),  # Replace with your custom cache handler if applicable
+    scope=scope
+)
+
+# Get the authorization URL
+auth_url = auth_manager.get_authorize_url()
+
+# After redirect, obtain the authorization code from the query parameters
+code = 'authorization_code_from_redirect'  # Replace with actual code obtained from redirect URI
 
 # Exchange the authorization code for an access token
-token_info = sp_oauth.get_access_token(code)
-# Use CacheHandler for caching
-auth_manager = SpotifyOAuth(client_id=c_id, 
-                            client_secret=s_id, 
-                            redirect_uri=redirect_uri,
-                            cache_handler=CacheHandler(),
-                            scope=scope)
+token_info = auth_manager.get_access_token(code)
 
+# Use the auth_manager with Spotipy to make API requests
 sp = spotipy.Spotify(auth_manager=auth_manager)
+
 
 # Set SpotiFire ID
 me = my_id
@@ -386,10 +391,10 @@ def create_playlist():
     else:
         return jsonify({'error': 'No items found for this user'}), 404
 
-@app.route('/splogin')
-def login():
-    auth_url = sp_oauth.get_authorize_url()
-    return redirect(auth_url)
+# @app.route('/splogin')
+# def login():
+#     auth_url = sp_oauth.get_authorize_url()
+#     return redirect(auth_url)
 
 ######################################## Functions #############################################
 # Add songs to spotify playlist
