@@ -384,6 +384,7 @@ def create_playlist():
         token_info = sp_oauth.get_cached_token()
         print('3')
         sp = spotipy.Spotify(auth=token_info['access_token'])
+        print('4')
         
 
         if user.playlist_uri:
