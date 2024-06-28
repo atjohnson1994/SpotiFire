@@ -19,14 +19,16 @@ import time
 s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
 jwt_key = os.getenv("JWT_KEY")
-my_id = os.getenv("MY_ID") 
+my_id = os.getenv("MY_ID")
+redirect_uri = "http://64.23.182.26:1410/"
+scope = "user-library-read playlist-modify-private" 
 
-# Spotify setup
-# from spotifire_id import *
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=c_id,
-                                               client_secret=s_id,
-                                               redirect_uri="http://64.23.182.26:1410/",
-                                               scope=("user-library-read", "playlist-modify-private")))
+# Initialize Spotipy with OAuth configuration
+auth_manager = SpotifyOAuth(client_id=c_id, client_secret=s_id, redirect_uri=redirect_uri, scope=scope)
+
+# Create a Spotipy instance with the auth manager
+sp = spotipy.Spotify(auth_manager=auth_manager)
+
 # Set SpotiFire ID
 me = my_id
 
