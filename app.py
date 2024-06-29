@@ -1,6 +1,6 @@
 ############################# Set up ###########################################
 # Import Flask dependencies
-from flask import Flask, jsonify, request, render_template, redirect, url_for, session
+from flask import Flask, jsonify, request, render_template, redirect, url_for, session, make_response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -101,38 +101,101 @@ def initialize_spotipy():
 
 ################################# Routes ####################################################
 
-# Auth route
 @app.route('/authorize')
 def authorize():
-    sp_oauth = get_spotify_oauth()
-    auth_url = sp_oauth.get_authorize_url()
-    return redirect(auth_url)
+  authorize_url = 'https://accounts.spotify.com/en/authorize?'
+  params = {'response_type': 'code', 'client_id': c_id,
+            'redirect_uri': redirect_uri, 'scope': scope
+            }
+  query_params = urlencode(params)
+  response = make_response(redirect(authorize_url + query_params))
+  return response
 
 # Callback route
 @app.route('/callback')
 def callback():
-    sp_oauth = get_spotify_oauth()
-    session.clear()
-    code = request.args.get('code')
-    token_info = sp_oauth.get_access_token(code)
-    session['token_info'] = token_info
-    return redirect(url_for('create_playlist'))
+	# make sure the response came from Spotify
+	if request.args.get('error'):
+		return render_template('home.html', error='Spotify error.')
+	else:
+		code = request.args.get('code')
 
-# Token management
-def get_token():
-    token_info = session.get('token_info', {})
-    sp_oauth = get_spotify_oauth()
+		# get access token to make requests on behalf of the user
+		payload = getToken(code)
+		if payload != None:
+			session['token'] = payload[0]
+			session['refresh_token'] = payload[1]
+			session['token_expiration'] = time.time() + payload[2]
+		else:
+			return render_template('home.html', error='Failed to access token.')
 
-    if not token_info:
-        raise "exception"
+	current_user = getUserInformation(session)
+	session['user_id'] = current_user['id']
 
-    now = int(datetime.now().timestamp())
-    is_expired = token_info['expires_at'] - now < 60
+	return redirect(session['previous_url'])
+def makeGetRequest(session, url, params={}):
+	headers = {"Authorization": "Bearer {}".format(session['token'])}
+	response = requests.get(url, headers=headers, params=params)
 
-    if is_expired:
-        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+	# 200 code indicates request was successful
+	if response.status_code == 200:
+		return response.json()
 
-    return token_info
+	# if a 401 error occurs, update the access token
+	elif response.status_code == 401 and checkTokenStatus(session) != None:
+		return makeGetRequest(session, url, params)
+	else:
+
+		return None
+def checkTokenStatus(session):
+	if time.time() > session['token_expiration']:
+		payload = refreshToken(session['refresh_token'])
+
+		if payload != None:
+			session['token'] = payload[0]
+			session['token_expiration'] = time.time() + payload[1]
+		else:
+
+			return None
+
+	return "Success"
+def getUserInformation(session):
+	url = 'https://api.spotify.com/v1/me'
+	payload = makeGetRequest(session, url)
+
+	if payload == None:
+		return None
+
+	return payload
+def refreshToken(refresh_token):
+	token_url = 'https://accounts.spotify.com/api/token'
+	authorization = app.config['AUTHORIZATION']
+
+	headers = {'Authorization': authorization, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'}
+	body = {'refresh_token': refresh_token, 'grant_type': 'refresh_token'}
+	post_response = requests.post(token_url, headers=headers, data=body)
+
+	# 200 code indicates access token was properly granted
+	if post_response.status_code == 200:
+		return post_response.json()['access_token'], post_response.json()['expires_in']
+	else:
+		
+		return None
+def getToken(code):
+  token_url = 'https://accounts.spotify.com/api/token'
+  authorization = app.config['AUTHORIZATION']
+  redirect_uri = app.config['REDIRECT_URI']
+  headers = {'Authorization': authorization, 
+             'Accept': 'application/json', 
+             'Content-Type': 'application/x-www-form-urlencoded'}
+  body = {'code': code, 'redirect_uri': redirect_uri, 
+          'grant_type': 'authorization_code'}
+  post_response = requests.post(token_url,headers=headers,data=body)
+  if post_response.status_code == 200:
+    pr = post_response.json()
+    return pr['access_token'], pr['refresh_token'], pr['expires_in']
+  else:
+    return None
 # # Endpoint for Spotify authorization flow
 # @app.route('/authorize')
 # def authorize():
@@ -412,7 +475,7 @@ def create_playlist():
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        token_info = get_token()
+        token_info = getToken()
         sp = initialize_spotipy(token_info)
         
         if user.playlist_uri:
