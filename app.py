@@ -98,9 +98,8 @@ class Item(db.Model):
 with app.app_context():
     db.create_all()
 
-# Initialize Spotipy with Client Credentials Flow
-def initialize_spotipy():
-    return spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=c_id, client_secret=s_id))
+def initialize_spotipy(token):
+    return spotipy.Spotify(auth=token)
 
 ################################# Routes ####################################################
 
