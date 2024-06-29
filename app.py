@@ -144,7 +144,7 @@ def callback():
 	session['user_id'] = current_user['id']
 
 
-	return redirect(session['previous_url'])
+	return redirect('/home')
 def makeGetRequest(session, url, params={}):
 	headers = {"Authorization": "Bearer {}".format(session['token'])}
 	response = requests.get(url, headers=headers, params=params)
