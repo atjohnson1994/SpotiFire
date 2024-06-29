@@ -27,7 +27,7 @@ s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
 jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
-redirect_uri = "http://64.23.182.26:1410/callback"
+redirect_uri = "http://64.23.182.26:5000/callback"
 scope = "user-library-read playlist-modify-private" 
 redirect_code = "AQA81Yf0r3U-arbbm8po2U_15PhTEFbVPJf2E3kRe3Dxys6OXi9q3EQSe2VV5N4dSYALFvEw6can7XLB0K_Dst-nkZCBCG2H2XD5k4z7ZqPzsHapT5nMDe-ChCq0-K1UrNnaULQjBqJ35uoeL8UWcD9TV3EectlmRS4OxnlMTIonQkc4tmhJfExMSwJxPp06RZCHut4nxY-oCCo2e9hINhJYccyg9Mes2oL-GNE"
 
