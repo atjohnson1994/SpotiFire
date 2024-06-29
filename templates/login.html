@@ -76,7 +76,7 @@
                     const data = await response.json();
                     localStorage.setItem('jwtToken', data.access_token);
                     console.log(data)
-                    window.location.href = '/home';
+                    window.location.href = '/authorize';
                 } else {
                     alert('Login failed');
                 }
