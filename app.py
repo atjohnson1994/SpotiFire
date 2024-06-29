@@ -50,6 +50,7 @@ sleep_rate=5
 
 # Initialize app
 app = Flask(__name__)
+app.secret_key = '12345678910'
 # CORS(app)
 CORS(app, resources={r"/*": {"origins": "http://64.23.182.26:5000"}}, supports_credentials=True)
 
