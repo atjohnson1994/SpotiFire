@@ -507,11 +507,8 @@ def create_playlist():
 
         if not user:
             return jsonify({'error': 'User not found'}), 404
-        print('1')
         token_info = session['token']
-        print('token_info')
         sp = initialize_spotipy(token_info)
-        sp.user_playlist_create(user=me, name=f"{user.username}'s Playlist", public=False, collaborative=False, description='')
         
         if user.playlist_uri:
             user_uri = user.playlist_uri
