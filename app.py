@@ -19,7 +19,8 @@ import json
 from urllib.parse import urlencode
 import requests
 from datetime import datetime, timedelta
-
+import random as rand
+import string as string
 # Access environment variables
 s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
@@ -103,22 +104,35 @@ def initialize_spotipy():
 
 @app.route('/authorize')
 def authorize():
-  authorize_url = 'https://accounts.spotify.com/en/authorize?'
-  params = {'response_type': 'code', 'client_id': c_id,
-            'redirect_uri': redirect_uri, 'scope': scope
-            }
-  query_params = urlencode(params)
-  response = make_response(redirect(authorize_url + query_params))
-  return response
+	client_id = app.config['CLIENT_ID']
+	client_secret = app.config['CLIENT_SECRET']
+	redirect_uri = app.config['REDIRECT_URI']
+	scope = app.config['SCOPE']
 
+	# state key used to protect against cross-site forgery attacks
+	state_key = createStateKey(15)
+	session['state_key'] = state_key
+
+	# redirect user to Spotify authorization page
+	authorize_url = 'https://accounts.spotify.com/en/authorize?'
+	parameters = 'response_type=code&client_id=' + client_id + '&redirect_uri=' + redirect_uri + '&scope=' + scope + '&state=' + state_key
+	response = make_response(redirect(authorize_url + parameters))
+
+	return response
+def createStateKey(size):
+	#https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits
+	return ''.join(rand.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(size))
 # Callback route
 @app.route('/callback')
 def callback():
 	# make sure the response came from Spotify
+	if request.args.get('state') != session['state_key']:
+		return render_template('home.html', error='State failed.')
 	if request.args.get('error'):
 		return render_template('home.html', error='Spotify error.')
 	else:
 		code = request.args.get('code')
+		session.pop('state_key', None)
 
 		# get access token to make requests on behalf of the user
 		payload = getToken(code)
@@ -127,10 +141,11 @@ def callback():
 			session['refresh_token'] = payload[1]
 			session['token_expiration'] = time.time() + payload[2]
 		else:
-			return render_template('home.html', error='Failed to access token.')
+			return render_template('index.html', error='Failed to access token.')
 
 	current_user = getUserInformation(session)
 	session['user_id'] = current_user['id']
+
 
 	return redirect(session['previous_url'])
 def makeGetRequest(session, url, params={}):
