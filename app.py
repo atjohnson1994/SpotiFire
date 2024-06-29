@@ -119,104 +119,114 @@ def authorize():
 def createStateKey(size):
     #https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits
     return ''.join(rand.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(size))
-# Callback route
 @app.route('/callback')
 def callback():
     # make sure the response came from Spotify
     if request.args.get('state') != session['state_key']:
-	return render_template('home.html', error='State failed.')
+        return render_template('home.html', error='State failed.')
     if request.args.get('error'):
-	return render_template('home.html', error='Spotify error.')
+        return render_template('home.html', error='Spotify error.')
     else:
-	code = request.args.get('code')
-	session.pop('state_key', None)
+        code = request.args.get('code')
+        session.pop('state_key', None)
 
-	# get access token to make requests on behalf of the user
-	payload = getToken(code)
-	if payload != None:
-	    session['token'] = payload[0]
-	    session['refresh_token'] = payload[1]
-	    session['token_expiration'] = time.time() + payload[2]
-	else:
-	    return render_template('home.html', error='Failed to access token.')
+        # get access token to make requests on behalf of the user
+        payload = getToken(code)
+        if payload is not None:
+            session['token'] = payload[0]
+            session['refresh_token'] = payload[1]
+            session['token_expiration'] = time.time() + payload[2]
+        else:
+            return render_template('home.html', error='Failed to access token.')
 
-	current_user = getUserInformation(session)
-	session['user_id'] = current_user['id']
+        current_user = getUserInformation(session)
+        session['user_id'] = current_user['id']
 
+        return redirect('/home')
 
-	return redirect('/home')
 def makeGetRequest(session, url, params={}):
     headers = {"Authorization": "Bearer {}".format(session['token'])}
     response = requests.get(url, headers=headers, params=params)
 
     # 200 code indicates request was successful
     if response.status_code == 200:
-	return response.json()
+        return response.json()
 
     # if a 401 error occurs, update the access token
-    elif response.status_code == 401 and checkTokenStatus(session) != None:
-	return makeGetRequest(session, url, params)
+    elif response.status_code == 401 and checkTokenStatus(session) is not None:
+        return makeGetRequest(session, url, params)
     else:
+        return None
 
-	return None
 def checkTokenStatus(session):
     if time.time() > session['token_expiration']:
-	payload = refreshToken(session['refresh_token'])
+        payload = refreshToken(session['refresh_token'])
 
-	if payload != None:
-	    session['token'] = payload[0]
-	    session['token_expiration'] = time.time() + payload[1]
-	else:
-
-	    return None
+        if payload is not None:
+            session['token'] = payload[0]
+            session['token_expiration'] = time.time() + payload[1]
+        else:
+            return None
 
     return "Success"
+
 def getUserInformation(session):
     url = 'https://api.spotify.com/v1/me'
     payload = makeGetRequest(session, url)
 
-    if payload == None:
-	return None
+    if payload is None:
+        return None
 
     return payload
-def refreshToken(refresh_token):
 
+def refreshToken(refresh_token):
     auth_str = f"{c_id}:{s_id}"
     auth_bytes = auth_str.encode('utf-8')
     auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
     token_url = 'https://accounts.spotify.com/api/token'
     authorization = f"Basic {auth_base64}"
 
-    headers = {'Authorization': authorization, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'}
-    body = {'refresh_token': refresh_token, 'grant_type': 'refresh_token'}
+    headers = {
+        'Authorization': authorization,
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    body = {
+        'refresh_token': refresh_token,
+        'grant_type': 'refresh_token'
+    }
     post_response = requests.post(token_url, headers=headers, data=body)
 
     # 200 code indicates access token was properly granted
     if post_response.status_code == 200:
-	return post_response.json()['access_token'], post_response.json()['expires_in']
+        return post_response.json()['access_token'], post_response.json()['expires_in']
     else:
-		
         return None
 
 def getToken(code):
+    auth_str = f"{c_id}:{s_id}"
+    auth_bytes = auth_str.encode('utf-8')
+    auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
 
-  auth_str = f"{c_id}:{s_id}"
-  auth_bytes = auth_str.encode('utf-8')
-  auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
+    token_url = 'https://accounts.spotify.com/api/token'
+    authorization = f"Basic {auth_base64}"
+    headers = {
+        'Authorization': authorization,
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    body = {
+        'code': code,
+        'redirect_uri': redirect_uri,
+        'grant_type': 'authorization_code'
+    }
+    post_response = requests.post(token_url, headers=headers, data=body)
+    if post_response.status_code == 200:
+        pr = post_response.json()
+        return pr['access_token'], pr['refresh_token'], pr['expires_in']
+    else:
+        return None
 
-  token_url = 'https://accounts.spotify.com/api/token'
-  authorization = f"Basic {auth_base64}"
-  headers = {'Authorization': authorization, 
-             'Accept': 'application/json', 
-             'Content-Type': 'application/x-www-form-urlencoded'}
-  body = {'code': code, 'redirect_uri': redirect_uri, 
-          'grant_type': 'authorization_code'}
-  post_response = requests.post(token_url,headers=headers,data=body)
-  if post_response.status_code == 200:
-    pr = post_response.json()
-    return pr['access_token'], pr['refresh_token'], pr['expires_in']
-  else:
-    return None
 # # Endpoint for Spotify authorization flow
 # @app.route('/authorize')
 # def authorize():
