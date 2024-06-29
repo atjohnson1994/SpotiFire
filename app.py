@@ -21,6 +21,7 @@ import requests
 from datetime import datetime, timedelta
 import random as rand
 import string as string
+import base64
 # Access environment variables
 s_id = os.getenv("SECRET_KEY")
 c_id = os.getenv("API_KEY")
@@ -104,10 +105,6 @@ def initialize_spotipy():
 
 @app.route('/authorize')
 def authorize():
-	client_id = app.config['CLIENT_ID']
-	client_secret = app.config['CLIENT_SECRET']
-	redirect_uri = app.config['REDIRECT_URI']
-	scope = app.config['SCOPE']
 
 	# state key used to protect against cross-site forgery attacks
 	state_key = createStateKey(15)
@@ -115,7 +112,7 @@ def authorize():
 
 	# redirect user to Spotify authorization page
 	authorize_url = 'https://accounts.spotify.com/en/authorize?'
-	parameters = 'response_type=code&client_id=' + client_id + '&redirect_uri=' + redirect_uri + '&scope=' + scope + '&state=' + state_key
+	parameters = 'response_type=code&client_id=' + c_id + '&redirect_uri=' + redirect_uri + '&scope=' + scope + '&state=' + state_key
 	response = make_response(redirect(authorize_url + parameters))
 
 	return response
@@ -141,7 +138,7 @@ def callback():
 			session['refresh_token'] = payload[1]
 			session['token_expiration'] = time.time() + payload[2]
 		else:
-			return render_template('index.html', error='Failed to access token.')
+			return render_template('home.html', error='Failed to access token.')
 
 	current_user = getUserInformation(session)
 	session['user_id'] = current_user['id']
@@ -183,8 +180,12 @@ def getUserInformation(session):
 
 	return payload
 def refreshToken(refresh_token):
+
+	auth_str = f"{c_id}:{s_id}"
+     	auth_bytes = auth_str.encode('utf-8')
+  	auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
 	token_url = 'https://accounts.spotify.com/api/token'
-	authorization = app.config['AUTHORIZATION']
+	authorization = f"Basic {auth_base64}"
 
 	headers = {'Authorization': authorization, 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'}
 	body = {'refresh_token': refresh_token, 'grant_type': 'refresh_token'}
@@ -196,10 +197,15 @@ def refreshToken(refresh_token):
 	else:
 		
 		return None
+
 def getToken(code):
+
+  auth_str = f"{c_id}:{s_id}"
+  auth_bytes = auth_str.encode('utf-8')
+  auth_base64 = base64.b64encode(auth_bytes).decode('utf-8')
+
   token_url = 'https://accounts.spotify.com/api/token'
-  authorization = app.config['AUTHORIZATION']
-  redirect_uri = app.config['REDIRECT_URI']
+  authorization = f"Basic {auth_base64}"
   headers = {'Authorization': authorization, 
              'Accept': 'application/json', 
              'Content-Type': 'application/x-www-form-urlencoded'}
