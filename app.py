@@ -106,44 +106,46 @@ def initialize_spotipy():
 
 @app.route('/authorize')
 def authorize():
-
-    # state key used to protect against cross-site forgery attacks
     state_key = createStateKey(15)
     session['state_key'] = state_key
-	
-    # redirect user to Spotify authorization page
-    authorize_url = 'https://accounts.spotify.com/en/authorize?'
-    parameters = 'response_type=code&client_id=' + c_id + '&redirect_uri=' + redirect_uri + '&scope=' + scope + '&state=' + state_key
-    response = make_response(redirect(authorize_url + parameters))
-	
+    
+    authorize_url = 'https://accounts.spotify.com/en/authorize'
+    parameters = {
+        'response_type': 'code',
+        'client_id': c_id,
+        'redirect_uri': redirect_uri,
+        'scope': scope,
+        'state': state_key
+    }
+    response = make_response(redirect(authorize_url + '?' + urlencode(parameters)))
+    
     return response
 def createStateKey(size):
     #https://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits
     return ''.join(rand.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(size))
 @app.route('/callback')
 def callback():
-    # make sure the response came from Spotify
     if request.args.get('state') != session['state_key']:
-        return render_template('home.html', error='State failed.')
+        return render_template('home.html', error='State verification failed.')
+    
     if request.args.get('error'):
-        return render_template('home.html', error='Spotify error.')
-    else:
-        code = request.args.get('code')
-        session.pop('state_key', None)
-
-        # get access token to make requests on behalf of the user
-        payload = getToken(code)
-        if payload is not None:
-            session['token'] = payload[0]
-            session['refresh_token'] = payload[1]
-            session['token_expiration'] = time.time() + payload[2]
-        else:
-            return render_template('home.html', error='Failed to access token.')
-
-        current_user = getUserInformation(session)
-        session['user_id'] = current_user['id']
-
-        return redirect('/home')
+        return render_template('home.html', error='Spotify authorization error.')
+    
+    code = request.args.get('code')
+    session.pop('state_key', None)  # Clear state_key after successful verification
+    
+    token_payload = getToken(code)
+    if token_payload is None:
+        return render_template('home.html', error='Failed to fetch access token.')
+    
+    session['token'] = token_payload[0]
+    session['refresh_token'] = token_payload[1]
+    session['token_expiration'] = time.time() + token_payload[2]
+    
+    current_user = getUserInformation(session)
+    session['user_id'] = current_user['id']
+    
+    return redirect('/home')
 
 def makeGetRequest(session, url, params={}):
     headers = {"Authorization": "Bearer {}".format(session['token'])}
