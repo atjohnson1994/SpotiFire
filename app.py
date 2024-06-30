@@ -29,7 +29,7 @@ c_id = os.getenv("API_KEY")
 jwt_key = os.getenv("JWT_KEY")
 my_id = os.getenv("MY_ID")
 app_secret = os.getenv("APP_SECRET")
-redirect_uri = "http://64.23.182.26:5000/callback"
+redirect_uri = "http://64.23.182.26:8000/callback"
 scope = "user-library-read playlist-modify-private" 
 
 # Spotify OAuth2 Manager
@@ -51,7 +51,7 @@ sleep_rate=5
 app = Flask(__name__)
 app.secret_key = app_secret
 # CORS(app)
-CORS(app, resources={r"/*": {"origins": "http://64.23.182.26:5000"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "http://64.23.182.26:8000"}}, supports_credentials=True)
 
 # Configure your JWT
 app.config['JWT_SECRET_KEY'] = jwt_key
