@@ -1,5 +1,6 @@
 # SpotiFire
 Web application for building spotify playlists for groups. It's a flask app that utilizes the spotify API and is hosted on digitalocean.
+- **Link:** http://www.spotifire.app
 
 ## Getting started
 ### Log in
