@@ -475,9 +475,10 @@ def playlist_creation(items, user, sp):
 
         if len(songs) < spl:
             if len(songs) > 2:
+                missing_quantity = spl - len(songs)
                 filler_artist = related_artists[0]['uri']
                 filler_top_tracks = sp.artist_top_tracks(filler_artist, country='US')['tracks']
-                filler_tracks = random.sample(filler_top_tracks, min(3, len(filler_top_tracks)))
+                filler_tracks = random.sample(filler_top_tracks, min(missing_quantity, len(filler_top_tracks)))
                 for track in filler_tracks:
                     if not allow_explicit and track['explicit']:
                         print(f"Track '{track['name']}' by {track['artists'][0]['name']} removed for explicit rating.")
