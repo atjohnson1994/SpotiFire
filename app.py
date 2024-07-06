@@ -434,8 +434,20 @@ def playlist_creation(items, user, sp):
         allow_explicit = user.explicit
         allow_holiday = user.holiday
         spl = user.songs_per_listener
+        if spl > 99:
+            spl = 99
+        if spl < 1:
+            spl = 1
         nra = user.number_of_related_artists
+        if nra > 10:
+            nra = 10
+        if nra < 0:
+            nra = 0
         rasc = user.related_artist_songs_count
+        if rasc > 10:
+            rasc = 10
+        if rasc < 0:
+            rasc = 0
         songs = []
         artists = [
             item.a1, item.a2, item.a3, item.a4, item.a5, 
