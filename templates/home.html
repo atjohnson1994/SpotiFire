@@ -311,7 +311,6 @@
     var holding = "";
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM fully loaded and parsed');
 
         async function fetchData() {
             const jwtToken = localStorage.getItem('jwtToken');
@@ -328,8 +327,6 @@
                         'Accept': 'application/json'
                     }
                 });
-
-                console.log('Authorization header:', 'Bearer ' + jwtToken);
 
                 if (!response.ok) {
                     console.error('Failed to fetch data, status:', response.status);
@@ -424,7 +421,6 @@
                         data: data
                     };
                     
-                    console.log("Sending data:", selectedListeners); // Log the data being sent
                     
                     fetch('/update-listeners', {
                         method: 'POST',
@@ -436,7 +432,6 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Success:', data);
                         
                         // Check if the button already exists in the form
                         var existingButton = document.getElementById('playlistForm').querySelector('#createPlaylistButton');
@@ -540,7 +535,6 @@ const handleFormSubmit = async (event) => {
 
         // If successful, parse the JSON response
         const responseData = await response.json();
-        console.log('Item added successfully:', responseData);
 
         // Optionally, close the modal or display success message to the user
         closeModal(); // Implement closeModal function as needed
