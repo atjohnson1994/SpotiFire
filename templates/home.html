@@ -265,6 +265,7 @@
         <form id="settingsForm">
             <label for="spl">Songs per listener:</label>
             <input type="number" id="spl" name="spl" required>
+            <p>(1-99)</p>
             <br>
             <label for="explicit">Explicit tracks allowed:</label>
             <input type="checkbox" id="explicit" name="explicit">
@@ -274,9 +275,11 @@
             <br>
             <label for="nra">Number of related artists:</label>
             <input type="number" id="nra" name="nra" required>
+            <p>(0-10)</p>
             <br>
             <label for="rasc">Related artist song count:</label>
             <input type="number" id="rasc" name="rasc" required>
+            <p>(0-10)</p>
             <br>
             <input type="submit" value="Submit" class="login-button">
         </form>
