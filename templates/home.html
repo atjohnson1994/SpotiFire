@@ -11,6 +11,18 @@
             padding: 0;
             background-color: #181818;
         }
+        .large-title {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #268519, #A8FF3F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+
+        }
         .profile-container {
             display: flex;
             flex-direction: column;
@@ -135,7 +147,7 @@
         .login-button {
           display: inline-block;
           padding: 10px 20px;
-          background-color: #1aac4a;
+          background-color: #268519;
           color: #fff;
           text-decoration: none;
           border-radius: 5px;
@@ -162,11 +174,11 @@
 </head>
 <body>
     <a href="#" id="logoutBtn" class="login-button">Logout</a>
+    <h1 class="large-title">SpotiFire</h1>
     <div class="profile-container">
         <div class="profile-header">
             <div class="user-info">
                 <h2 id="username">Unknown</h2>
-                <p>SpotiFire</p>
             </div>
         </div>
         
