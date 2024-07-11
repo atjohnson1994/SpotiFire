@@ -370,7 +370,7 @@ def delete_item(item_name):
 # Create playlist route
 @app.route('/create', methods=['POST'])
 @jwt_required(optional=True)
-def create_playlist():
+def create_playlist(session):
     try:
         user_id = get_jwt_identity()
         user = User.query.filter_by(id=user_id).first()
@@ -379,6 +379,7 @@ def create_playlist():
             return jsonify({'error': 'User not found'}), 404
         token_info = session['token']
         sp = initialize_spotipy(token_info)
+        me = session['id']
         
         if user.playlist_uri:
             user_uri = user.playlist_uri
