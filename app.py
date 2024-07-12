@@ -370,7 +370,7 @@ def delete_item(item_name):
 # Create playlist route
 @app.route('/create', methods=['POST'])
 @jwt_required(optional=True)
-def create_playlist(session):
+def create_playlist():
     try:
         user_id = get_jwt_identity()
         user = User.query.filter_by(id=user_id).first()
