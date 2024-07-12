@@ -379,7 +379,7 @@ def create_playlist():
             return jsonify({'error': 'User not found'}), 404
         token_info = session['token']
         sp = initialize_spotipy(token_info)
-        me = session['user_id']
+        #me = session['user_id']
         
         if user.playlist_uri:
             user_uri = user.playlist_uri
